@@ -466,7 +466,7 @@ const propFlowAuth = {
   user: null,
   profile: null,
 };
-const propFlowBuildId = "20260509-issue1-login-crash-fix-v1";
+const propFlowBuildId = "20260509-tenant-actions-v1";
 let selectedTicketId = state.tickets[0]?.id || "";
 let ticketFilter = "all";
 let repairRouteFilter = {};
@@ -3274,12 +3274,16 @@ function renderTenants() {
       </div>
       <div class="row-actions">
         <span class="status-chip ${tenant.status === "active" ? "good" : ""}">${tenant.status}</span>
+        <button type="button" data-open-property="${tenant.id}">Open property</button>
         <button type="button" data-edit="${tenant.id}">Edit</button>
         <button type="button" data-end="${tenant.id}">${tenant.status === "active" ? "End tenancy" : "Reactivate"}</button>
+        <button class="danger-button" type="button" data-remove="${tenant.id}">Remove</button>
       </div>
     `;
+    row.querySelector("[data-open-property]").addEventListener("click", () => openTenantProperty(tenant.id));
     row.querySelector("[data-edit]").addEventListener("click", () => fillTenantForm(tenant.id));
     row.querySelector("[data-end]").addEventListener("click", () => toggleTenancy(tenant.id));
+    row.querySelector("[data-remove]").addEventListener("click", () => removeTenant(tenant.id));
     tenantList.appendChild(row);
   });
 }
@@ -4044,6 +4048,7 @@ function inviteTeamMember() {
 function fillTenantForm(id) {
   const tenant = state.tenants.find((item) => item.id === id);
   if (!tenant) return;
+  document.querySelector("#tenantId").value = tenant.id;
   document.querySelector("#tenantFullName").value = tenant.fullName;
   document.querySelector("#tenantPhone").value = tenant.phone;
   document.querySelector("#tenantEmail").value = tenant.email;
@@ -4053,6 +4058,80 @@ function fillTenantForm(id) {
   document.querySelector("#tenantAccessPropertySelect").value = tenant.address;
   document.querySelector("#tenantCanViewDocs").checked = tenant.canViewDocs !== false;
   showToast(`${tenant.fullName} loaded into the tenant form.`);
+}
+
+function clearTenantForm() {
+  document.querySelector("#tenantId").value = "";
+  document.querySelector("#tenantFullName").value = "";
+  document.querySelector("#tenantPhone").value = "";
+  document.querySelector("#tenantEmail").value = "";
+  document.querySelector("#tenantAddress").value = "";
+  document.querySelector("#tenantPostcode").value = "";
+  document.querySelector("#tenantStartDate").value = new Date().toISOString().slice(0, 10);
+  document.querySelector("#tenantCanViewDocs").checked = true;
+  showToast("Tenant form is ready for a new tenant.");
+}
+
+function removeTenant(id) {
+  const tenant = state.tenants.find((item) => item.id === id);
+  if (!tenant) return;
+  const confirmed = window.confirm(`Remove ${tenant.fullName} from the tenant register? Rent items and tenant notifications for this tenant will also be removed.`);
+  if (!confirmed) return;
+  state.tenants = state.tenants.filter((item) => item.id !== id);
+  state.rentItems = state.rentItems.filter((item) => item.tenantId !== id);
+  state.notifications = state.notifications.filter((item) => item.tenantId !== id);
+  state.tickets = state.tickets.map((ticket) => ticket.tenantId === id ? { ...ticket, tenantId: "", tenant: tenant.fullName } : ticket);
+  saveState();
+  clearTenantForm();
+  renderTenants();
+  renderProperties();
+  renderFinance();
+  renderNotifications();
+  renderSession();
+  showToast(`${tenant.fullName} removed from the tenant register.`);
+}
+
+function openTenantProperty(id) {
+  const tenant = state.tenants.find((item) => item.id === id);
+  if (!tenant) return;
+  let property = state.properties.find((item) => item.address === tenant.address);
+  if (!property && tenant.address) {
+    ensurePropertyRecord(tenant.address, tenant.postcode);
+    property = state.properties.find((item) => item.address === tenant.address);
+  }
+  if (!property) {
+    showToast("Add an address for this tenant first.");
+    return;
+  }
+  routeToPanel("propertiesPanel");
+  selectProperty(property.id);
+}
+
+function useTenantAccessPropertyInForm() {
+  const selectedAddress = document.querySelector("#tenantAccessPropertySelect").value;
+  const property = state.properties.find((item) => item.address === selectedAddress);
+  if (!property) {
+    showToast("No property selected yet.");
+    return;
+  }
+  document.querySelector("#tenantAddress").value = property.address;
+  document.querySelector("#tenantPostcode").value = property.postcode || "";
+  showToast("Selected property copied into the tenant form.");
+}
+
+function addTenantPropertyFromForm() {
+  const address = document.querySelector("#tenantAddress").value.trim();
+  const postcode = document.querySelector("#tenantPostcode").value.trim();
+  if (!address) {
+    showToast("Add a tenant property address first.");
+    return;
+  }
+  ensurePropertyRecord(address, postcode);
+  renderProperties();
+  renderPropertyOptions();
+  const select = document.querySelector("#tenantAccessPropertySelect");
+  if (select) select.value = address;
+  showToast("Property is now available for tenant assignment.");
 }
 
 function toggleTenancy(id) {
@@ -4072,9 +4151,10 @@ function toggleTenancy(id) {
 }
 
 function saveTenantFromForm() {
+  const id = document.querySelector("#tenantId").value;
   const fullName = document.querySelector("#tenantFullName").value.trim();
   const address = document.querySelector("#tenantAddress").value.trim();
-  const existing = state.tenants.find((tenant) => tenant.fullName === fullName && tenant.address === address);
+  const existing = state.tenants.find((tenant) => tenant.id === id) || state.tenants.find((tenant) => tenant.fullName === fullName && tenant.address === address);
   const tenant = existing || { id: `TEN-${Math.floor(2000 + Math.random() * 7000)}`, status: "active", tenancyEnd: "" };
   tenant.fullName = fullName || "New tenant";
   tenant.phone = document.querySelector("#tenantPhone").value.trim();
@@ -4084,6 +4164,7 @@ function saveTenantFromForm() {
   tenant.tenancyStart = document.querySelector("#tenantStartDate").value;
   tenant.canViewDocs = document.querySelector("#tenantCanViewDocs").checked;
   ensurePropertyRecord(tenant.address, tenant.postcode);
+  document.querySelector("#tenantId").value = tenant.id;
   if (!existing) state.tenants.unshift(tenant);
   saveState();
   renderTenants();
@@ -4773,6 +4854,10 @@ document.querySelector("#tenantForm").addEventListener("submit", (event) => {
   saveTenantFromForm();
 });
 
+document.querySelector("#newTenantBtn").addEventListener("click", clearTenantForm);
+document.querySelector("#clearTenantFormBtn").addEventListener("click", clearTenantForm);
+document.querySelector("#useTenantAccessPropertyBtn").addEventListener("click", useTenantAccessPropertyInForm);
+document.querySelector("#addTenantPropertyBtn").addEventListener("click", addTenantPropertyFromForm);
 document.querySelector("#saveTenantAccessBtn").addEventListener("click", saveTenantAccess);
 
 document.querySelector("#teamForm").addEventListener("submit", (event) => {
