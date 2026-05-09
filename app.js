@@ -350,6 +350,19 @@ const defaultDocuments = [
   },
 ];
 
+const complianceDocumentTypes = [
+  { label: "Electrical safety certificate / EICR", key: "eicr", requiresExpiry: true, requiredByDefault: true },
+  { label: "Gas safety certificate", key: "gas_safety", requiresExpiry: true, requiredByDefault: false, requirementFlag: "hasGas" },
+  { label: "EPC", key: "epc", requiresExpiry: true, requiredByDefault: true },
+  { label: "Smoke/CO Alarm Record", key: "smoke_co_alarm", requiresExpiry: false, requiredByDefault: false },
+  { label: "Tenancy agreement", key: "tenancy_agreement", requiresExpiry: false, requiredByDefault: true },
+  { label: "Inventory and check-in", key: "inventory", requiresExpiry: false, requiredByDefault: true },
+  { label: "Fire Risk Assessment", key: "fire_risk_assessment", requiresExpiry: true, requiredByDefault: false },
+  { label: "HMO Licence", key: "hmo_licence", requiresExpiry: true, requiredByDefault: false, requirementFlag: "hasHmoLicence" },
+  { label: "Selective/Additional Licence", key: "selective_additional_licence", requiresExpiry: true, requiredByDefault: false, requirementFlag: "hasSelectiveLicence" },
+  { label: "Other", key: "other", requiresExpiry: false, requiredByDefault: false },
+];
+
 const tradeRules = {
   "Water leak": { trade: "Plumber", contractor: "Northline Plumbing Ltd", sla: "4 hours", approval: "Not required" },
   "Electrical problem": { trade: "Electrician", contractor: "BrightSpark Electrical", sla: "2 hours", approval: "Not required" },
@@ -466,7 +479,7 @@ const propFlowAuth = {
   user: null,
   profile: null,
 };
-const propFlowBuildId = "20260509-issue3-tenant-activation-v1";
+const propFlowBuildId = "20260509-issue5-doc-compliance-v1";
 let selectedTicketId = state.tickets[0]?.id || "";
 let ticketFilter = "all";
 let repairRouteFilter = {};
@@ -701,7 +714,7 @@ function emptyWorkspaceState() {
 }
 
 function normaliseWorkspaceState(saved, fallback) {
-  return {
+  const workspace = {
     ...fallback,
     ...saved,
     tenants: Array.isArray(saved.tenants) ? saved.tenants : fallback.tenants,
@@ -713,6 +726,20 @@ function normaliseWorkspaceState(saved, fallback) {
     documents: Array.isArray(saved.documents) ? saved.documents : fallback.documents,
     postcodeLookups: saved.postcodeLookups || {},
     branding: saved.branding || fallback.branding,
+  };
+  return backfillDocumentPropertyIds(workspace);
+}
+
+function backfillDocumentPropertyIds(workspace) {
+  const properties = Array.isArray(workspace.properties) ? workspace.properties : [];
+  const documents = Array.isArray(workspace.documents) ? workspace.documents : [];
+  return {
+    ...workspace,
+    documents: documents.map((documentItem) => {
+      if (documentItem.propertyId) return documentItem;
+      const linkedProperty = properties.find((property) => property.address === documentItem.property);
+      return linkedProperty ? { ...documentItem, propertyId: linkedProperty.id } : documentItem;
+    }),
   };
 }
 
@@ -1779,7 +1806,7 @@ function updateMetrics() {
   const rentCollected = state.rentItems.filter((item) => item.status === "paid").reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const maintenanceSpend = state.tickets.reduce((sum, ticket) => sum + Number(ticket.actualCost || ticket.estimatedCost || 0), 0);
   const netPosition = state.properties.reduce((sum, property) => sum + propertyFinancials(property).net, 0);
-  const expiringCertificates = state.documents.filter((documentItem) => ["Expired", "Due soon"].includes(documentStatus(documentItem).label)).length;
+  const expiringCertificates = expiringCertificateCount();
   setText("dashboardTotalProperties", state.properties.length);
   setText("openRepairs", openTickets.length);
   setText("newCount", newTickets.length);
@@ -1830,7 +1857,7 @@ function ticketsForProperty(property) {
 }
 
 function documentsForProperty(property) {
-  return state.documents.filter((documentItem) => documentItem.property === property.address);
+  return state.documents.filter((documentItem) => documentMatchesProperty(documentItem, property));
 }
 
 function rentItemsForProperty(property) {
@@ -1867,8 +1894,10 @@ function propertyFinancials(property) {
 
 function missingRequiredDocuments(property) {
   const docs = documentsForProperty(property);
-  const required = ["Tenancy agreement", "Electrical safety certificate / EICR", "Gas safety certificate", "EPC"];
-  return required.filter((type) => !docs.some((documentItem) => documentItem.type === type || documentItem.type.includes(type)));
+  const required = complianceDocumentTypes.filter((item) => item.requiredByDefault || (item.requirementFlag && property[item.requirementFlag] === true));
+  return required
+    .filter((typeConfig) => !docs.some((documentItem) => complianceDocumentKey(documentItem.type) === typeConfig.key))
+    .map((typeConfig) => typeConfig.label);
 }
 
 function propertyNeedsAttention(property) {
@@ -1910,6 +1939,7 @@ function ensurePropertyRecord(address, postcode = "") {
 }
 
 function renderPropertyOptions() {
+  state = backfillDocumentPropertyIds(state);
   const selects = [
     document.querySelector("#documentProperty"),
     document.querySelector("#tenantAccessPropertySelect"),
@@ -1931,6 +1961,20 @@ function renderPropertyOptions() {
       select.value = current;
     }
   });
+}
+
+function populateDocumentTypeOptions() {
+  const select = document.querySelector("#documentType");
+  if (!select) return;
+  const current = select.value;
+  select.innerHTML = "";
+  complianceDocumentTypes.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item.label;
+    option.textContent = item.label;
+    select.appendChild(option);
+  });
+  if ([...select.options].some((option) => option.value === current)) select.value = current;
 }
 
 function renderPropertyMetrics() {
@@ -2182,6 +2226,7 @@ async function savePropertyFromForm() {
   }
 
   if (!existing) state.properties.unshift(property);
+  state.documents = state.documents.map((documentItem) => documentItem.property === property.address ? { ...documentItem, propertyId: property.id } : documentItem);
   selectedPropertyId = property.id;
   activeDetailTab = "overview";
   if (property.postcode && property.postcode !== previousPostcode && !property.manualCouncilName) {
@@ -2378,6 +2423,15 @@ function renderPropertyDetail() {
   document.querySelectorAll("[data-open-property-repair]").forEach((button) => {
     button.addEventListener("click", () => openRepairFromAgencyTrades(button.dataset.openPropertyRepair));
   });
+  document.querySelectorAll("[data-open-property-document]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const documentItem = state.documents.find((item) => item.id === button.dataset.openPropertyDocument);
+      if (documentItem) openDocument(documentItem);
+    });
+  });
+  document.querySelectorAll("[data-delete-property-document]").forEach((button) => {
+    button.addEventListener("click", () => deleteDocument(button.dataset.deletePropertyDocument));
+  });
   document.querySelectorAll("[data-edit-property-tenant]").forEach((button) => {
     button.addEventListener("click", () => {
       fillTenantForm(button.dataset.editPropertyTenant);
@@ -2536,13 +2590,27 @@ function renderPropertyDocumentsTab({ property, docs }) {
         <div class="section-heading compact-heading">
           <div>
             <h3>Documents</h3>
-            <p>Certificates, layout plans, and property-level files.</p>
+            <p>Linked certificates, layout plans, visibility, and expiry/review dates.</p>
           </div>
           <button type="button" id="propertyDetailUploadBtn">Upload layout / plan</button>
         </div>
         ${docs.length ? docs.map((documentItem) => {
           const status = documentStatus(documentItem);
-          return `<div class="document-row compact-document-row"><span class="doc-icon">${documentInitial(documentItem.type)}</span><div><strong>${documentItem.type}</strong><small>${documentItem.fileName} - ${documentItem.visibility === "tenant" ? "tenant-visible" : "agency only"}</small></div><span class="status-chip ${status.className}">${status.label}</span></div>`;
+          return `
+            <div class="document-row compact-document-row">
+              <span class="doc-icon">${documentInitial(documentItem.type)}</span>
+              <div>
+                <strong>${documentItem.type}</strong>
+                <small>${documentItem.fileName || "Document"} - ${documentVisibilityLabel(documentItem.visibility)}</small>
+                <small>${documentItem.expiry ? `Expiry/review: ${formatDate(documentItem.expiry)}` : "No expiry/review date"}</small>
+              </div>
+              <span class="status-chip ${status.className}">${status.label}</span>
+              <div class="row-actions">
+                <button type="button" data-open-property-document="${documentItem.id}">Open</button>
+                <button class="danger-button" type="button" data-delete-property-document="${documentItem.id}">Delete</button>
+              </div>
+            </div>
+          `;
         }).join("") : `<div class="empty-state">No documents.</div>`}
         ${layoutDocs.length ? "" : `<div class="empty-state">No layout plan uploaded yet.</div>`}
         ${certificateAlerts.length ? `<p><strong>Certificate alerts:</strong> ${certificateAlerts.map((documentItem) => documentItem.type).join(", ")}</p>` : ""}
@@ -2635,6 +2703,7 @@ async function uploadPropertyLayout() {
     id: `DOC-${Math.floor(3000 + Math.random() * 6000)}`,
     type,
     property: property.address,
+    propertyId: property.id,
     fileName: file.name,
     issueDate: "",
     validityYears: "",
@@ -2656,7 +2725,7 @@ async function uploadPropertyLayout() {
 
 function filteredDocuments() {
   return state.documents.filter((documentItem) => {
-    const propertyMatches = documentPropertyFilter === "all" || documentItem.property === documentPropertyFilter;
+    const propertyMatches = documentPropertyFilter === "all" || documentItem.property === documentPropertyFilter || documentItem.propertyId === documentPropertyFilter;
     const visibilityMatches = documentVisibilityFilter === "all" || documentItem.visibility === documentVisibilityFilter;
     const status = documentStatus(documentItem).label.toLowerCase();
     const statusMatches =
@@ -2664,10 +2733,49 @@ function filteredDocuments() {
       (documentStatusFilter === "due" && status === "due soon") ||
       (documentStatusFilter === "stored" && status === "stored") ||
       status === documentStatusFilter;
-    const haystack = `${documentItem.type} ${documentItem.property} ${documentItem.fileName} ${documentItem.notes}`.toLowerCase();
+    const property = propertyForDocument(documentItem);
+    const haystack = `${documentItem.type} ${property?.address || documentItem.property} ${documentItem.fileName} ${documentItem.notes}`.toLowerCase();
     const searchMatches = !documentSearch || haystack.includes(documentSearch);
     return propertyMatches && visibilityMatches && statusMatches && searchMatches;
   });
+}
+
+function propertyForDocument(documentItem) {
+  return state.properties.find((property) => property.id === documentItem.propertyId)
+    || state.properties.find((property) => property.address === documentItem.property)
+    || null;
+}
+
+function documentMatchesProperty(documentItem, property) {
+  if (!documentItem || !property) return false;
+  return Boolean((documentItem.propertyId && documentItem.propertyId === property.id) || documentItem.property === property.address);
+}
+
+function complianceDocumentKey(type = "") {
+  const value = String(type || "").toLowerCase();
+  if (value.includes("eicr") || value.includes("electrical")) return "eicr";
+  if (value.includes("gas")) return "gas_safety";
+  if (value.includes("epc")) return "epc";
+  if (value.includes("smoke") || value.includes("co alarm") || value.includes("carbon monoxide")) return "smoke_co_alarm";
+  if (value.includes("tenancy")) return "tenancy_agreement";
+  if (value.includes("inventory") || value.includes("check-in")) return "inventory";
+  if (value.includes("fire risk")) return "fire_risk_assessment";
+  if (value.includes("hmo")) return "hmo_licence";
+  if (value.includes("selective") || value.includes("additional licence") || value.includes("additional license")) return "selective_additional_licence";
+  return "other";
+}
+
+function complianceDocumentConfig(type = "") {
+  const key = complianceDocumentKey(type);
+  return complianceDocumentTypes.find((item) => item.key === key) || complianceDocumentTypes[complianceDocumentTypes.length - 1];
+}
+
+function expiringCertificateCount() {
+  return state.documents.filter((documentItem) => {
+    if (!documentItem.expiry) return false;
+    const status = documentStatus(documentItem).label;
+    return status === "Expired" || status === "Due soon";
+  }).length;
 }
 
 function documentStatus(documentItem) {
@@ -2675,6 +2783,7 @@ function documentStatus(documentItem) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const expiry = new Date(`${documentItem.expiry}T00:00:00`);
+  if (Number.isNaN(expiry.getTime())) return { label: "Stored", className: "good" };
   const daysUntilExpiry = Math.ceil((expiry - today) / 86400000);
   if (daysUntilExpiry < 0) return { label: "Expired", className: "urgent" };
   if (daysUntilExpiry <= 30) return { label: "Due soon", className: "warning" };
@@ -2693,21 +2802,32 @@ function documentInitial(type) {
 
 function documentRow(documentItem, tenantView = false) {
   const status = documentStatus(documentItem);
+  const property = propertyForDocument(documentItem);
   const row = document.createElement("div");
   row.className = "document-row";
   row.innerHTML = `
     <span class="doc-icon">${documentInitial(documentItem.type)}</span>
     <div>
       <strong>${documentItem.type}</strong>
-      <small>${documentItem.property}</small>
-      <small>${documentItem.fileName} - ${documentItem.visibility === "tenant" ? "tenant-visible" : "agency only"}</small>
+      <small>${property?.address || documentItem.property || "No property linked"}</small>
+      <small>${documentItem.fileName} - ${documentVisibilityLabel(documentItem.visibility)}</small>
       <small>${documentItem.expiry ? `expires ${formatDate(documentItem.expiry)}` : "no expiry date"}${documentItem.notes ? ` - ${documentItem.notes}` : ""}</small>
     </div>
     <span class="status-chip ${status.className}">${status.label}</span>
-    <button class="document-action" type="button">View</button>
+    <div class="row-actions">
+      <button class="document-action" type="button" data-view-document>View</button>
+      ${tenantView ? "" : `<button class="document-action danger-button" type="button" data-delete-document>Delete</button>`}
+    </div>
   `;
-  row.querySelector("button").addEventListener("click", () => openDocument(documentItem, tenantView));
+  row.querySelector("[data-view-document]").addEventListener("click", () => openDocument(documentItem, tenantView));
+  row.querySelector("[data-delete-document]")?.addEventListener("click", () => deleteDocument(documentItem.id));
   return row;
+}
+
+function documentVisibilityLabel(visibility) {
+  if (visibility === "tenant") return "tenant-visible";
+  if (visibility === "landlord") return "landlord-visible";
+  return "agency only";
 }
 
 function renderDocuments() {
@@ -2734,7 +2854,8 @@ function renderTenantDocuments() {
     if (documentItem.visibility !== "tenant") return false;
     if (user.type !== "tenant") return true;
     if (tenant.canViewDocs === false) return false;
-    return documentItem.property === tenant.address;
+    const property = state.properties.find((item) => item.address === tenant.address);
+    return documentMatchesProperty(documentItem, property || { address: tenant.address, id: tenant.propertyId || "" });
   });
   if (!tenantVisibleDocs.length) {
     tenantDocumentList.innerHTML = `<div class="empty-state">No tenant-visible documents yet.</div>`;
@@ -2762,7 +2883,8 @@ function renderTenantAccessSummary() {
   const tenant = authorisedTenant();
   const tenantPanel = document.querySelector("#tenantPanel");
   if (tenantPanel) tenantPanel.classList.toggle("tenant-locked", currentUser().type === "tenant" && !tenant);
-  const tenantDocs = state.documents.filter((documentItem) => documentItem.visibility === "tenant" && documentItem.property === tenant?.address);
+  const tenantProperty = state.properties.find((item) => item.address === tenant?.address);
+  const tenantDocs = state.documents.filter((documentItem) => documentItem.visibility === "tenant" && documentMatchesProperty(documentItem, tenantProperty || { address: tenant?.address, id: tenant?.propertyId || "" }));
   const tenantRepairs = state.tickets.filter((ticket) => ticket.property === tenant?.address && !["Completed", "Closed", "Cancelled"].includes(ticket.status));
   const rent = rentForTenant(tenant?.id);
   const property = state.properties.find((item) => item.address === tenant?.address);
@@ -2879,8 +3001,10 @@ function landlordScopedTickets(properties) {
 }
 
 function landlordScopedDocuments(properties) {
-  const propertyAddresses = new Set(properties.map((property) => property.address));
-  return state.documents.filter((documentItem) => propertyAddresses.has(documentItem.property));
+  return state.documents.filter((documentItem) =>
+    documentItem.visibility === "landlord" &&
+    properties.some((property) => documentMatchesProperty(documentItem, property))
+  );
 }
 
 function landlordScopedRentItems(properties) {
@@ -3015,6 +3139,23 @@ function closeDocumentModal() {
   modal.setAttribute("aria-hidden", "true");
 }
 
+function deleteDocument(id) {
+  const documentItem = state.documents.find((item) => item.id === id);
+  if (!documentItem) return;
+  const confirmed = window.confirm(`Delete ${documentItem.type} from ${documentItem.property || "this property"}?`);
+  if (!confirmed) return;
+  state.documents = state.documents.filter((item) => item.id !== id);
+  saveState();
+  closeDocumentModal();
+  updateMetrics();
+  renderDocuments();
+  renderProperties();
+  renderDashboardAttention();
+  renderTenantAccessSummary();
+  renderLandlordPortal();
+  showToast(`${documentItem.type} deleted.`);
+}
+
 function formatDate(value) {
   if (!value) return "";
   return new Date(`${value}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
@@ -3105,6 +3246,8 @@ function activeTenantOrWarn() {
 async function makeDocumentFromForm() {
   const file = document.querySelector("#documentFile").files[0];
   const type = document.querySelector("#documentType").value;
+  const propertyValue = document.querySelector("#documentProperty").value;
+  const property = state.properties.find((item) => item.id === propertyValue || item.address === propertyValue);
   const issueDate = document.querySelector("#documentIssueDate").value;
   const validityYears = document.querySelector("#documentValidityYears").value;
   const calculatedExpiry = calculateExpiry(issueDate, validityYears);
@@ -3112,7 +3255,8 @@ async function makeDocumentFromForm() {
   return {
     id: `DOC-${Math.floor(3000 + Math.random() * 6000)}`,
     type,
-    property: document.querySelector("#documentProperty").value,
+    property: property?.address || propertyValue,
+    propertyId: property?.id || "",
     fileName: file?.name || `${type.toLowerCase().replaceAll(" ", "-")}.pdf`,
     issueDate,
     validityYears,
@@ -5161,6 +5305,7 @@ document.querySelectorAll("[data-tenant-report-focus]").forEach((button) => {
 
 async function bootstrapApp() {
   applyBranding();
+  populateDocumentTypeOptions();
   setAuthScreenVisible(true);
   updateMetrics();
   renderTickets();

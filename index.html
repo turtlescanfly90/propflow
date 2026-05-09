@@ -1379,6 +1379,7 @@
                   <select id="documentVisibilityFilter">
                     <option value="all">All documents</option>
                     <option value="tenant">Tenant-visible</option>
+                    <option value="landlord">Landlord-visible</option>
                     <option value="private">Agency only</option>
                   </select>
                 </label>
@@ -1453,10 +1454,11 @@
                   </label>
                   <label>
                     Visibility
-                    <select id="documentVisibility">
-                      <option value="tenant">Tenant can view</option>
-                      <option value="private">Agency only</option>
-                    </select>
+                  <select id="documentVisibility">
+                    <option value="tenant">Tenant can view</option>
+                    <option value="landlord">Landlord can view</option>
+                    <option value="private">Agency only</option>
+                  </select>
                   </label>
                 </div>
                 <label>
@@ -1642,6 +1644,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/auth-config.generated.js?v=20260507-auth-config-2"></script>
     <script src="postcodeLookup.js?v=20260504-london-council-websites"></script>
-    <script src="app.js?v=20260509-issue3-tenant-activation-v1"></script>
+    <script src="app.js?v=20260509-issue5-doc-compliance-v1"></script>
   </body>
 </html>
