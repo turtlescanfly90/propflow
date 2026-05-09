@@ -1979,7 +1979,7 @@ function populateDocumentTypeOptions() {
 
 function renderPropertyMetrics() {
   const occupied = state.properties.filter((property) => property.occupancy === "occupied").length;
-  const certificateAlerts = state.properties.filter(propertyNeedsAttention).length;
+  const certificateAlerts = expiringCertificateCount();
   const totalNet = state.properties.reduce((sum, property) => sum + propertyFinancials(property).net, 0);
   document.querySelector("#propertyCount").textContent = state.properties.length;
   document.querySelector("#occupiedPropertyCount").textContent = occupied;
