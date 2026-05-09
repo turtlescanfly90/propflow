@@ -1,0 +1,1627 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PropFlow | UK Lettings Operations</title>
+    <meta name="theme-color" content="#2563EB" />
+    <meta name="application-name" content="PropFlow" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="PropFlow" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#2563EB" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="/manifest.webmanifest?v=20260507-pwa" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/propflow-icon-192.png?v=20260507-pwa" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/propflow-icon-512.png?v=20260507-pwa" />
+    <link rel="icon" type="image/svg+xml" href="/assets/propflow-icon.svg?v=20260507-pwa" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/assets/propflow-icon-192.png?v=20260507-pwa" />
+    <link rel="stylesheet" href="styles.css?v=20260507-login-guard" />
+  </head>
+  <body class="auth-required">
+    <section class="auth-screen" id="authScreen" aria-label="PropFlow sign in">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3v-9.5Z" />
+            </svg>
+          </div>
+          <div>
+            <strong>PropFlow</strong>
+            <span>Secure portal access</span>
+          </div>
+        </div>
+
+        <div class="auth-tabs" role="tablist" aria-label="Authentication">
+          <button class="active" type="button" data-auth-tab="login">Login</button>
+          <button type="button" data-auth-tab="signup">Sign up</button>
+        </div>
+
+        <form class="auth-form active" id="authLoginForm" data-auth-panel="login">
+          <label>
+            Email
+            <input id="authLoginEmail" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Password
+            <input id="authLoginPassword" type="password" autocomplete="current-password" required />
+          </label>
+          <button class="primary-button" type="submit">Login</button>
+          <button class="auth-link-button" id="resendConfirmationBtn" type="button">Resend confirmation email</button>
+          <button class="auth-link-button" id="resetPasswordBtn" type="button">Send password reset link</button>
+        </form>
+
+        <form class="auth-form" id="authSignupForm" data-auth-panel="signup">
+          <label>
+            Email
+            <input id="authSignupEmail" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Password
+            <input id="authSignupPassword" type="password" autocomplete="new-password" minlength="6" required />
+          </label>
+          <label>
+            Confirm password
+            <input id="authSignupConfirmPassword" type="password" autocomplete="new-password" minlength="6" required />
+          </label>
+          <fieldset class="role-picker">
+            <legend>Choose your role</legend>
+            <label>
+              <input type="radio" name="signupRole" value="agency" required />
+              <span><strong>Agency</strong><small>Manage properties, tenants, documents, and repairs.</small></span>
+            </label>
+            <label>
+              <input type="radio" name="signupRole" value="landlord" required />
+              <span><strong>Landlord</strong><small>View owned properties and future owner reports.</small></span>
+            </label>
+            <label>
+              <input type="radio" name="signupRole" value="tenant" required checked />
+              <span><strong>Tenant</strong><small>Report repairs and view your own documents.</small></span>
+            </label>
+          </fieldset>
+          <button class="primary-button" type="submit">Create account</button>
+        </form>
+
+        <form class="auth-form" id="authRoleForm" data-auth-panel="role">
+          <div>
+            <h2>Choose your workspace</h2>
+            <p>Your role controls which portal you can access.</p>
+          </div>
+          <fieldset class="role-picker">
+            <legend>Select one role</legend>
+            <label>
+              <input type="radio" name="profileRole" value="agency" required />
+              <span><strong>Agency</strong><small>Manage properties, tenants, documents, and repairs.</small></span>
+            </label>
+            <label>
+              <input type="radio" name="profileRole" value="landlord" required />
+              <span><strong>Landlord</strong><small>View owned properties and future owner reports.</small></span>
+            </label>
+            <label>
+              <input type="radio" name="profileRole" value="tenant" required />
+              <span><strong>Tenant</strong><small>Report repairs and view your own documents.</small></span>
+            </label>
+          </fieldset>
+          <button class="primary-button" type="submit">Continue</button>
+        </form>
+
+        <div class="auth-form auth-confirmation" id="authConfirmationPanel" data-auth-panel="confirm">
+          <div>
+            <h2>Check your email</h2>
+            <p>We’ve sent a confirmation link to <strong id="confirmationEmail">your email address</strong>.</p>
+            <p>Please confirm your email before signing in.</p>
+          </div>
+          <button class="primary-button" type="button" id="goToLoginBtn">Go to sign in</button>
+          <button class="auth-link-button" type="button" id="resendSignupConfirmationBtn">Resend email</button>
+        </div>
+
+        <p class="auth-message" id="authMessage">Use your email and password to access your role workspace.</p>
+      </div>
+    </section>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Main navigation">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3v-9.5Z" />
+            </svg>
+          </div>
+          <div>
+            <strong id="brandName">PropFlow</strong>
+            <span id="brandSub">Agency workspace</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" id="roleNavList" aria-label="Role navigation"></nav>
+
+        <div class="sidebar-card">
+          <span>Managed portfolio</span>
+          <strong>184</strong>
+          <small>properties across 3 branches</small>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="modeEyebrow">White-label property operations</p>
+            <h1 id="modeTitle">One workspace for tenants, repairs, paperwork, and compliance.</h1>
+          </div>
+          <div class="header-actions">
+            <label class="search-box" aria-label="Search">
+              <svg viewBox="0 0 24 24"><path d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" /></svg>
+              <input id="globalSearch" type="search" placeholder="Search tenants, repairs, documents..." />
+            </label>
+            <div class="account-menu">
+              <button class="account-button" id="accountButton" type="button" aria-expanded="false">
+                <span id="accountInitials">LA</span>
+                <strong id="accountName">Leah Turner</strong>
+                <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" /></svg>
+              </button>
+              <div class="account-dropdown" id="accountDropdown">
+                <div class="account-dropdown-header">
+                  <strong id="signedInUser">Agency Admin - leah@harbourlettings.example</strong>
+                  <small id="accountRole">Agency workspace</small>
+                </div>
+                <button class="secondary-button" type="button" id="authSignOutBtn">Sign out</button>
+              </div>
+            </div>
+          </div>
+        </header>
+        <div class="search-results" id="searchResults"></div>
+
+        <section class="panel-section active" id="overviewPanel">
+          <div class="dashboard-page-header">
+            <div>
+              <p class="eyebrow">Agency dashboard</p>
+              <h2>Portfolio command centre</h2>
+              <p>Scan repairs, rent, compliance, and occupancy in one place.</p>
+            </div>
+          </div>
+          <div class="metrics-grid dashboard-kpis">
+            <article class="metric-card metric-link" data-panel-target="propertiesPanel" data-route-filter="properties" tabindex="0" role="button" aria-label="Open properties">
+              <div class="metric-card-top">
+                <span class="metric-title">Total properties</span>
+                <span class="stat-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4 6 4v14M9 21v-7h6v7M9 10h.01M13 10h.01" /></svg></span>
+              </div>
+              <strong id="dashboardTotalProperties">0</strong>
+              <small>managed by the agency</small>
+            </article>
+            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-open" tabindex="0" role="button" aria-label="Open repairs dashboard">
+              <div class="metric-card-top">
+                <span class="metric-title">Open repairs</span>
+                <span class="stat-icon red" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a5 5 0 0 1-6.6 6.6L6.5 20.5a2.1 2.1 0 0 1-3-3l7.7-7.7a5 5 0 0 1 6.6-6.6l-3.1 3.1Z" /></svg></span>
+              </div>
+              <strong id="openRepairs">0</strong>
+              <small>0 urgent, 0 assigned to contractor</small>
+            </article>
+            <article class="metric-card metric-link" data-panel-target="financePanel" data-route-filter="rent-collected" tabindex="0" role="button" aria-label="Open rent collected">
+              <div class="metric-card-top">
+                <span class="metric-title">Rent collected</span>
+                <span class="stat-icon green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7H14a3.5 3.5 0 1 1 0 7H6" /></svg></span>
+              </div>
+              <strong id="dashboardRentCollected">&pound;0</strong>
+              <small>this month</small>
+            </article>
+            <article class="metric-card metric-link" data-panel-target="financePanel" data-route-filter="maintenance-spend" tabindex="0" role="button" aria-label="Open maintenance spend">
+              <div class="metric-card-top">
+                <span class="metric-title">Maintenance spend</span>
+                <span class="stat-icon orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h16M7 20V8l5-4 5 4v12M9 20v-7h6v7M9 9h6" /></svg></span>
+              </div>
+              <strong id="dashboardMaintenanceSpend">&pound;0</strong>
+              <small>estimated this month</small>
+            </article>
+            <article class="metric-card metric-link" data-panel-target="financePanel" data-route-filter="profit" tabindex="0" role="button" aria-label="Open profit and net position">
+              <div class="metric-card-top">
+                <span class="metric-title">Profit</span>
+                <span class="stat-icon neutral profit-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h18v12H3V7ZM7 7V5h10v2M8 13h8M8 16h5" /></svg></span>
+              </div>
+              <strong id="dashboardProfit">&pound;0</strong>
+              <small>rent minus costs and fees</small>
+            </article>
+            <article class="metric-card metric-link" data-panel-target="documentsPanel" data-route-filter="documents-expiring" tabindex="0" role="button" aria-label="Open expiring certificates">
+              <div class="metric-card-top">
+                <span class="metric-title">Expiring certificates</span>
+                <span class="stat-icon orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6ZM14 2v6h6M12 12v4M12 19h.01" /></svg></span>
+              </div>
+              <strong id="dashboardExpiringCertificates">0</strong>
+              <small>expired or due within 30 days</small>
+            </article>
+          </div>
+
+          <section class="panel agency-empty-start" id="agencyEmptyState" hidden>
+            <div>
+              <p class="eyebrow">New agency workspace</p>
+              <h2>Your dashboard is ready.</h2>
+              <p>No demo tenants or properties have been loaded into this account. Add your first real property to start building the agency workspace.</p>
+            </div>
+            <button class="primary-button" type="button" id="agencyStartPropertyBtn">Add first property</button>
+          </section>
+
+          <div class="dashboard-section-title">
+            <h2>Financial overview</h2>
+          </div>
+          <div class="dashboard-grid dashboard-chart-grid">
+            <section class="panel chart-card chart-link" id="rentChartCard" tabindex="0" role="button" aria-label="Open financials">
+              <div class="section-heading">
+                <div>
+                  <h2>Rent collected</h2>
+                  <p>Monthly snapshot.</p>
+                </div>
+              </div>
+              <div class="bar-chart" id="rentBarChart"></div>
+            </section>
+            <section class="panel chart-card chart-link" id="repairsChartCard" tabindex="0" role="button" aria-label="Open repairs">
+              <div class="section-heading">
+                <div>
+                  <h2>Repairs</h2>
+                  <p>Workload breakdown.</p>
+                </div>
+              </div>
+              <div class="donut-wrap">
+                <div class="donut-chart" id="repairsDonutChart"></div>
+                <div class="chart-legend" id="repairsChartLegend"></div>
+              </div>
+            </section>
+            <section class="panel chart-card chart-link" id="occupancyChartCard" tabindex="0" role="button" aria-label="Open properties">
+              <div class="section-heading">
+                <div>
+                  <h2>Occupancy</h2>
+                  <p>Occupied versus vacant.</p>
+                </div>
+              </div>
+              <div class="occupancy-bars" id="occupancyChart"></div>
+            </section>
+          </div>
+
+          <div class="dashboard-section-title">
+            <h2>Repairs and reminders</h2>
+          </div>
+          <div class="dashboard-grid dashboard-modern-grid">
+            <section class="panel dashboard-timeline-panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Recent activity</h2>
+                  <p>Latest tenant and agency actions.</p>
+                </div>
+                <button class="icon-button" type="button" id="refreshOverview" aria-label="Refresh overview">
+                  <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v6h6" /></svg>
+                </button>
+              </div>
+              <div class="timeline-list" id="dashboardTimeline"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Agency reminders</h2>
+                  <p>Items needing attention.</p>
+                </div>
+              </div>
+              <div class="data-table" id="dashboardRemindersTable"></div>
+              <div class="pipeline sr-only" aria-hidden="true">
+                <div><strong id="newCount">0</strong><span>New</span></div>
+                <div><strong id="assignedCount">0</strong><span>Assigned</span></div>
+                <div><strong id="scheduledCount">0</strong><span>Scheduled</span></div>
+                <div><strong id="completedCount">0</strong><span>Completed</span></div>
+              </div>
+            </section>
+          </div>
+
+          <div class="dashboard-grid dashboard-table-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Recent repair requests</h2>
+                  <p>Open operational work.</p>
+                </div>
+              </div>
+              <div class="data-table" id="dashboardRepairsTable"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Property snapshot</h2>
+                  <p>Occupancy and rent overview.</p>
+                </div>
+              </div>
+              <div class="data-table" id="dashboardPropertiesTable"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="propertiesPanel">
+          <div class="metrics-grid">
+            <article class="metric-card">
+              <div class="metric-card-top">
+                <span>Managed properties</span>
+                <span class="stat-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4 6 4v14M9 21v-7h6v7M9 10h.01M13 10h.01" /></svg></span>
+              </div>
+              <strong id="propertyCount">0</strong>
+              <small>agency portfolio</small>
+            </article>
+            <article class="metric-card calm">
+              <div class="metric-card-top">
+                <span>Occupied</span>
+                <span class="stat-icon green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-8 0v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg></span>
+              </div>
+              <strong id="occupiedPropertyCount">0</strong>
+              <small>active tenancies</small>
+            </article>
+            <article class="metric-card warning">
+              <div class="metric-card-top">
+                <span>Certificates due</span>
+                <span class="stat-icon orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6ZM14 2v6h6M12 12v4M12 19h.01" /></svg></span>
+              </div>
+              <strong id="propertyCertificateAlerts">0</strong>
+              <small>expired or due soon</small>
+            </article>
+            <article class="metric-card">
+              <div class="metric-card-top">
+                <span>Net position</span>
+                <span class="stat-icon neutral property-net-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h18v12H3V7ZM7 7V5h10v2M8 13h8M8 16h5" /></svg></span>
+              </div>
+              <strong id="propertyNetTotal">&pound;0</strong>
+              <small>rent minus repairs and fees</small>
+            </article>
+          </div>
+
+          <div class="documents-grid properties-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Properties</h2>
+                  <p>Search managed properties and open the operating record for each address.</p>
+                </div>
+              </div>
+              <div class="document-toolbar">
+                <label>
+                  Search properties
+                  <input id="propertySearch" type="search" placeholder="Address, tenant, postcode, landlord..." />
+                </label>
+                <label>
+                  Quick filter
+                  <select id="propertyStatusFilter">
+                    <option value="all">All properties</option>
+                    <option value="occupied">Occupied</option>
+                    <option value="vacant">Vacant</option>
+                    <option value="attention">Needs attention</option>
+                  </select>
+                </label>
+              </div>
+              <div class="property-data-actions" aria-label="Property data tools">
+                <button class="secondary-inline" type="button" id="exportPropertiesCsvBtn">Export CSV</button>
+                <button class="secondary-inline" type="button" id="exportPropertiesExcelBtn">Export Excel</button>
+                <button class="secondary-inline" type="button" id="exportPropertiesPdfBtn">Export PDF</button>
+                <label class="file-action">
+                  Upload updated file
+                  <input id="propertyDataImport" type="file" accept=".csv,.txt,.xls,.html" />
+                </label>
+              </div>
+              <p class="helper-copy">Export, update rows in a spreadsheet, then upload the CSV or Excel table back here. Property ID or address is used to update the right record.</p>
+              <div class="tenant-list" id="propertyList"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Property detail</h2>
+                  <p>Upload floor plans, PDF layouts, images, and property-level documents.</p>
+                </div>
+              </div>
+              <div id="propertyDetail"></div>
+              <details class="property-upload-card" id="propertyFormPanel">
+                <summary>Add / update property</summary>
+                <p>Keep landlord contact details, rent, fees, and occupancy matched to the property record.</p>
+                <form class="form-stack" id="propertyForm">
+                  <input id="propertyId" type="hidden" />
+                  <label>
+                    Full address
+                    <input id="propertyAddress" placeholder="Example: Flat 2, 10 High Street, London SW1" />
+                  </label>
+                  <div class="split">
+                    <label>
+                      Postcode
+                      <input id="propertyPostcode" placeholder="SW1A 1AA" autocomplete="postal-code" />
+                    </label>
+                    <label>
+                      Property type
+                      <input id="propertyType" placeholder="Flat, terraced house, studio..." />
+                    </label>
+                  </div>
+                  <div class="council-lookup-card" id="propertyCouncilCard">
+                    <div>
+                      <span>Detected council</span>
+                      <strong id="propertyCouncilDetected">Enter postcode to lookup</strong>
+                      <small id="propertyCouncilMeta">Uses postcode lookup, not address text.</small>
+                    </div>
+                    <div class="row-actions">
+                      <button class="secondary-inline" type="button" id="lookupPropertyCouncilBtn">Lookup</button>
+                      <button class="secondary-inline" type="button" id="overridePropertyCouncilBtn">Override council</button>
+                    </div>
+                    <label class="manual-council-field" id="manualCouncilField">
+                      Manual council
+                      <input id="propertyManualCouncil" placeholder="Only use if official lookup is wrong" />
+                    </label>
+                  </div>
+                  <div class="split">
+                    <label>
+                      Bedrooms
+                      <input id="propertyBedrooms" type="number" min="0" step="1" value="2" />
+                    </label>
+                    <label>
+                      Bathrooms
+                      <input id="propertyBathrooms" type="number" min="0" step="1" value="1" />
+                    </label>
+                  </div>
+                  <label>
+                    Landlord / owner
+                    <input id="propertyLandlord" placeholder="Landlord name or company" />
+                  </label>
+                  <div class="split">
+                    <label>
+                      Landlord email
+                      <input id="propertyLandlordEmail" type="email" placeholder="owner@example.com" />
+                    </label>
+                    <label>
+                      Landlord phone
+                      <input id="propertyLandlordPhone" placeholder="07123 456789" />
+                    </label>
+                  </div>
+                  <div class="split">
+                    <label>
+                      Monthly rent
+                      <input id="propertyMonthlyRent" type="number" min="0" step="0.01" value="1450" />
+                    </label>
+                    <label>
+                      Occupancy
+                      <select id="propertyOccupancy">
+                        <option value="occupied">Occupied</option>
+                        <option value="vacant">Vacant</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="split">
+                    <label>
+                      Agency fee %
+                      <input id="propertyAgencyFee" type="number" min="0" max="100" step="0.01" value="10" />
+                    </label>
+                    <label>
+                      Other expenses
+                      <input id="propertyOtherExpenses" type="number" min="0" step="0.01" value="0" />
+                    </label>
+                  </div>
+                  <div class="row-actions property-form-actions">
+                    <button class="primary-button" type="submit">Save property</button>
+                    <button class="secondary-button" type="button" id="newPropertyBtn">New blank property</button>
+                  </div>
+                </form>
+              </details>
+
+              <details class="property-upload-card" id="propertyUploadPanel">
+                <summary>Upload layout / plan</summary>
+                <p>Files are agency-only by default. Mark tenant-visible only when the agency wants the tenant to see it.</p>
+                <div class="form-stack">
+                  <label>
+                    Document type
+                    <select id="propertyLayoutType">
+                      <option>Layout plan</option>
+                      <option>Floor plan</option>
+                      <option>Property compliance document</option>
+                      <option>Management agreement</option>
+                      <option>Other property document</option>
+                    </select>
+                  </label>
+                  <label>
+                    Visibility
+                    <select id="propertyLayoutVisibility">
+                      <option value="private">Agency only</option>
+                      <option value="tenant">Tenant visible</option>
+                    </select>
+                  </label>
+                  <label>
+                    PDF or image
+                    <input id="propertyLayoutFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                  </label>
+                  <button class="primary-button" type="button" id="propertyLayoutUploadBtn">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                    Upload to property
+                  </button>
+                </div>
+              </details>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="tenantPanel">
+          <div class="tenant-home-shell">
+            <nav class="tenant-home-nav" aria-label="Tenant navigation">
+              <a href="#tenantHome">Home</a>
+              <a href="#tenantReportRepair">Report repair</a>
+              <a href="#tenantRepairs">My repairs</a>
+              <a href="#tenantDocuments">Documents</a>
+              <a href="#tenantRent">Rent</a>
+              <a href="#tenantMessages">Messages</a>
+              <a href="#tenantProfile">Profile/settings</a>
+            </nav>
+
+            <section class="tenant-home-hero" id="tenantHome">
+              <div>
+                <p class="eyebrow">Tenant portal</p>
+                <h2>Home essentials, kept simple.</h2>
+                <p>Report repairs, check documents, rent, and updates for your assigned property only.</p>
+              </div>
+            </section>
+
+            <section class="tenant-property-card tenant-card-surface">
+              <div class="tenant-card-heading">
+                <span>My property</span>
+                <strong id="tenantPropertyAddress">Flat 4, 18 Albion Road</strong>
+                <small id="tenantPropertyPostcode">N1 8AB</small>
+              </div>
+              <div class="tenant-property-facts">
+                <div><span>Status</span><strong id="tenantAccessStatus">Active tenancy</strong></div>
+                <div><span>Rent</span><strong id="tenantRentAmount">&pound;0</strong></div>
+                <div><span>Next due</span><strong id="tenantRentDueDate">No schedule</strong></div>
+                <div><span>Contact</span><strong id="tenantAgencyContact">Agency</strong></div>
+              </div>
+            </section>
+
+            <section class="tenant-primary-action tenant-card-surface" id="tenantReportRepair">
+              <div>
+                <span>Need help at home?</span>
+                <h2>Report a repair</h2>
+                <p>Add photos, explain the issue, and share times that work for a visit.</p>
+              </div>
+              <button class="primary-button tenant-report-cta" type="button" data-tenant-report-focus>Report a repair</button>
+            </section>
+
+            <section class="tenant-section-card tenant-card-surface" id="tenantRepairs">
+              <div class="tenant-section-heading">
+                <div>
+                  <h2>My repairs</h2>
+                  <p>Open requests for your current home.</p>
+                </div>
+              </div>
+              <div class="tenant-card-list" id="tenantRepairList"></div>
+            </section>
+
+            <section class="tenant-section-card tenant-card-surface" id="tenantDocuments">
+              <div class="tenant-section-heading">
+                <div>
+                  <h2>Documents</h2>
+                  <p>Agreements, certificates, and notices shared with you.</p>
+                </div>
+              </div>
+              <div class="tenant-card-list" id="tenantDocumentList"></div>
+            </section>
+
+            <section class="tenant-section-card tenant-card-surface" id="tenantRent">
+              <div class="tenant-section-heading">
+                <div>
+                  <h2>Rent</h2>
+                  <p>Your current rent schedule.</p>
+                </div>
+              </div>
+              <div class="tenant-rent-card">
+                <span id="tenantRentStatus">No schedule</span>
+                <strong id="tenantRentSummary">&pound;0</strong>
+                <small id="tenantRentMeta">No rent due date added yet.</small>
+              </div>
+            </section>
+
+            <section class="tenant-section-card tenant-card-surface" id="tenantMessages">
+              <div class="tenant-section-heading">
+                <div>
+                  <h2>Messages and updates</h2>
+                  <p>Latest updates from the agency.</p>
+                </div>
+              </div>
+              <div class="tenant-card-list" id="tenantUpdatesList"></div>
+              <form class="tenant-message-card" id="tenantMessageForm">
+                <label>
+                  Message agency
+                  <textarea id="tenantAgencyMessage" rows="3" placeholder="Ask the agency a question or send a non-repair update"></textarea>
+                </label>
+                <button class="secondary-button" type="submit">Send message</button>
+              </form>
+            </section>
+
+            <section class="tenant-section-card tenant-card-surface" id="tenantProfile">
+              <div class="tenant-section-heading">
+                <div>
+                  <h2>Profile/settings</h2>
+                  <p>Your access is linked to your tenant email and active tenancy.</p>
+                </div>
+              </div>
+              <div class="tenant-profile-grid">
+                <div><span>Tenant</span><strong id="tenantAccessName">Maya Collins</strong></div>
+                <div><span>Email</span><strong id="tenantAccessEmail">maya@example.com</strong></div>
+                <div><span>Authorised property</span><strong id="tenantAccessProperty">Flat 4, 18 Albion Road</strong></div>
+              </div>
+            </section>
+
+            <section class="tenant-section-card tenant-card-surface tenant-repair-form-card">
+              <div class="tenant-section-heading">
+                <div>
+                  <h2>Repair details</h2>
+                  <p>Tell the agency what happened.</p>
+                </div>
+              </div>
+              <form class="form-stack" id="repairForm">
+                <label>
+                  Tenant name
+                  <input id="tenantName" value="Maya Collins" />
+                </label>
+                <label>
+                  Your active property
+                  <input id="tenantResolvedProperty" value="Flat 4, 18 Albion Road, London" readonly />
+                </label>
+                <div class="split">
+                  <label>
+                    Issue type
+                    <select id="issueType">
+                      <option value="Water leak">Water leak</option>
+                      <option value="Electrical problem">Electrical problem</option>
+                      <option value="Heating or boiler">Heating or boiler</option>
+                      <option value="Damp or mould">Damp or mould</option>
+                      <option value="Appliance fault">Appliance fault</option>
+                    </select>
+                  </label>
+                  <label>
+                    Urgency
+                    <select id="urgency">
+                      <option>Emergency</option>
+                      <option selected>Urgent</option>
+                      <option>Routine</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  What happened?
+                  <textarea id="issueDescription" rows="4">Water is coming through the bathroom ceiling when the upstairs flat uses the shower.</textarea>
+                </label>
+                <label>
+                  Add photos or videos
+                  <input id="photoUpload" type="file" accept="image/*,video/*" multiple />
+                </label>
+                <div class="photo-preview" id="photoPreview">
+                  <div>Leak photo</div>
+                  <div>Ceiling stain</div>
+                  <div>Access panel</div>
+                </div>
+                <div class="availability-card">
+                  <h3>Availability for contractor visit</h3>
+                  <p>Add times that work for access. Once an appointment is confirmed, you can request a reschedule instead of editing directly.</p>
+                  <div class="split">
+                    <label>
+                      Availability window
+                      <input id="availabilityWindow" value="Monday 9am-12pm" />
+                    </label>
+                    <label>
+                      Preferred contact
+                      <select id="preferredContact">
+                        <option>Phone</option>
+                        <option>Email</option>
+                        <option>In-app message</option>
+                      </select>
+                    </label>
+                  </div>
+                  <button class="secondary-button" type="button" id="addAvailabilityBtn">Add window</button>
+                  <div class="tag-list" id="availabilityList">
+                    <span>Monday 9am-12pm</span>
+                    <span>Tuesday 2pm-6pm</span>
+                  </div>
+                  <label>
+                    Access notes
+                    <textarea id="accessNotes" rows="4">Parking is available behind the building. Please call on arrival. No pets in property.</textarea>
+                  </label>
+                  <label class="checkbox-row">
+                    <input id="permissionToEnter" type="checkbox" />
+                    Permission to enter if tenant is absent
+                  </label>
+                </div>
+                <button class="primary-button" type="submit">
+                  <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" /></svg>
+                  Send to agency
+                </button>
+              </form>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="tenantsPanel">
+          <div class="documents-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Tenant register</h2>
+                  <p>First-hand tenant, property, rent, and access information for agency staff.</p>
+                </div>
+                <button class="secondary-inline" type="button" id="exportTenantsBtn">Export CSV</button>
+              </div>
+              <div class="document-toolbar">
+                <label>
+                  Search tenants
+                  <input id="tenantSearch" type="search" placeholder="Name, address, postcode, email..." />
+                </label>
+                <label>
+                  Tenant CSV import
+                  <input id="tenantCsvImport" type="file" accept=".csv" />
+                </label>
+                <label>
+                  Status filter
+                  <select id="tenantStatusFilter">
+                    <option value="all">All tenants</option>
+                    <option value="active">Active</option>
+                    <option value="ended">Ended</option>
+                  </select>
+                </label>
+              </div>
+              <div class="tenant-list" id="tenantList"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Add or update tenant</h2>
+                  <p>This mirrors the tenant spreadsheet columns so import/export stays clean.</p>
+                </div>
+              </div>
+              <form class="form-stack" id="tenantForm">
+                <label>
+                  Full name
+                  <input id="tenantFullName" value="Maya Collins" />
+                </label>
+                <div class="split">
+                  <label>
+                    Phone
+                    <input id="tenantPhone" value="07123 456789" />
+                  </label>
+                  <label>
+                    Email
+                    <input id="tenantEmail" value="maya@example.com" />
+                  </label>
+                </div>
+                <label>
+                  Property address
+                  <input id="tenantAddress" value="Flat 4, 18 Albion Road, London" />
+                </label>
+                <div class="split">
+                  <label>
+                    Postcode
+                    <input id="tenantPostcode" value="N1 8AB" />
+                  </label>
+                  <label>
+                    Tenancy start
+                    <input id="tenantStartDate" type="date" value="2026-04-01" />
+                  </label>
+                </div>
+                <button class="primary-button" type="submit">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+                  Save tenant
+                </button>
+              </form>
+              <div class="access-control-card">
+                <h3>Access control</h3>
+                <p>Choose what this tenant email is authorised to see.</p>
+                <label>
+                  Authorised property
+                  <select id="tenantAccessPropertySelect">
+                    <option>Flat 4, 18 Albion Road, London</option>
+                    <option>7 Mason Street, London</option>
+                    <option>21 Park View, London</option>
+                  </select>
+                </label>
+                <label class="checkbox-row">
+                  <input id="tenantCanViewDocs" type="checkbox" checked />
+                  Tenant can view tenant-visible documents for this property
+                </label>
+                <button class="secondary-button" type="button" id="saveTenantAccessBtn">Save access</button>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="notificationsPanel">
+          <div class="documents-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Tenant notifications</h2>
+                  <p>Prepare rent overdue reminders, document notices, repair updates, or general messages.</p>
+                </div>
+              </div>
+              <form class="form-stack" id="notificationForm">
+                <label>
+                  Tenant
+                  <select id="notificationTenant"></select>
+                </label>
+                <label>
+                  Template
+                  <select id="notificationTemplate">
+                    <option value="rent_overdue">Rent overdue reminder</option>
+                    <option value="rent_due">Upcoming rent due</option>
+                    <option value="document_request">Document/action request</option>
+                    <option value="repair_update">Repair update</option>
+                    <option value="general">General message</option>
+                  </select>
+                </label>
+                <label>
+                  Subject
+                  <input id="notificationSubject" value="Rent payment reminder" />
+                </label>
+                <label>
+                  Message
+                  <textarea id="notificationMessage" rows="5">Your rent payment is overdue. Please contact the agency if you have already made payment or need support.</textarea>
+                </label>
+                <div class="split">
+                  <label>
+                    Channel
+                    <select id="notificationChannel">
+                      <option value="in_app">In-app</option>
+                      <option value="email">Email draft</option>
+                      <option value="sms">SMS draft</option>
+                    </select>
+                  </label>
+                  <label>
+                    Priority
+                    <select id="notificationPriority">
+                      <option value="normal">Normal</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </label>
+                </div>
+                <button class="primary-button" type="submit">
+                  <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" /></svg>
+                  Add notification
+                </button>
+              </form>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Notification log</h2>
+                  <p>Agency inbox for tenant repair alerts, tenant messages, and prepared outgoing notices.</p>
+                </div>
+              </div>
+              <div class="tenant-list" id="notificationList"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="financePanel">
+          <div class="metrics-grid">
+            <article class="metric-card">
+              <span>Rent due this month</span>
+              <strong id="rentDueTotal">GBP 0</strong>
+              <small id="rentDueMeta">0 active tenancies</small>
+            </article>
+            <article class="metric-card warning">
+              <span>Overdue rent</span>
+              <strong id="overdueTotal">GBP 0</strong>
+              <small id="overdueMeta">0 overdue payments</small>
+            </article>
+            <article class="metric-card calm">
+              <span>Collected</span>
+              <strong id="collectedTotal">GBP 0</strong>
+              <small>This prototype tracks payment status manually</small>
+            </article>
+            <article class="metric-card">
+              <span>Upcoming deadlines</span>
+              <strong id="deadlineCount">0</strong>
+              <small>rent due dates in next 14 days</small>
+            </article>
+          </div>
+
+          <div class="documents-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Rent schedule</h2>
+                  <p>Track rent due dates, amounts, deadlines, arrears, and payment status.</p>
+                </div>
+              </div>
+              <div class="document-toolbar">
+                <label>
+                  Search rent
+                  <input id="rentSearch" type="search" placeholder="Tenant, address, status..." />
+                </label>
+                <label>
+                  Rent status
+                  <select id="rentStatusFilter">
+                    <option value="all">All rent items</option>
+                    <option value="due">Due</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="paid">Paid</option>
+                  </select>
+                </label>
+              </div>
+              <div class="tenant-list" id="rentList"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Add rent deadline</h2>
+                  <p>Later this can connect to accounting software or payment providers.</p>
+                </div>
+              </div>
+              <form class="form-stack" id="rentForm">
+                <label>
+                  Tenant
+                  <select id="rentTenant"></select>
+                </label>
+                <div class="split">
+                  <label>
+                    Amount
+                    <input id="rentAmount" type="number" min="0" step="0.01" value="1450" />
+                  </label>
+                  <label>
+                    Due date
+                    <input id="rentDueDate" type="date" />
+                  </label>
+                </div>
+                <label>
+                  Status
+                  <select id="rentStatus">
+                    <option value="due">Due</option>
+                    <option value="paid">Paid</option>
+                    <option value="overdue">Overdue</option>
+                  </select>
+                </label>
+                <button class="primary-button" type="submit">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+                  Save rent item
+                </button>
+              </form>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="ticketsPanel">
+          <div class="repair-layout">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Repair inbox</h2>
+                  <p>Assign tenant reports to approved agency tradespeople.</p>
+                </div>
+                <div class="segmented" role="group" aria-label="Ticket filter">
+                  <button class="active" type="button" data-filter="all">All</button>
+                  <button type="button" data-filter="urgent">Urgent</button>
+                  <button type="button" data-filter="approval">Approval</button>
+                </div>
+              </div>
+              <label class="section-search">
+                Search repairs
+                <input id="repairSearch" type="search" placeholder="Issue, tenant, property, contractor..." />
+              </label>
+              <div class="ticket-list" id="ticketList"></div>
+            </section>
+
+            <section class="panel detail-panel">
+              <div class="section-heading">
+                <div>
+                  <h2 id="ticketTitle">Water leak</h2>
+                  <p id="ticketAddress">Flat 4, 18 Albion Road, London</p>
+                </div>
+                <span class="status-chip urgent" id="ticketPriority">Urgent</span>
+              </div>
+
+              <div class="evidence-grid" id="evidenceGrid">
+                <div>Photo</div>
+                <div>Video</div>
+                <div>Tenant note</div>
+              </div>
+
+              <div class="detail-grid">
+                <div>
+                  <span>Tenant</span>
+                  <strong id="ticketTenant">Maya Collins</strong>
+                </div>
+                <div>
+                  <span>Landlord approval</span>
+                  <strong id="ticketApproval">Not required</strong>
+                </div>
+                <div>
+                  <span>Suggested trade</span>
+                  <strong id="ticketTrade">Plumber</strong>
+                </div>
+                <div>
+                  <span>SLA target</span>
+                  <strong id="ticketSla">4 hours</strong>
+                </div>
+              </div>
+
+              <section class="coordination-card">
+                <h3>Tenant visit information</h3>
+                <div class="tag-list" id="ticketAvailabilityList"></div>
+                <p id="ticketAccessNotes">Access notes will appear here.</p>
+                <span class="status-chip" id="ticketPermission">Permission pending</span>
+              </section>
+
+              <section class="coordination-card">
+                <h3>Repair timeline</h3>
+                <div class="timeline-list compact" id="repairTimeline"></div>
+              </section>
+
+              <section class="coordination-card">
+                <h3>Agency coordination</h3>
+                <div class="split">
+                  <label>
+                    Job status
+                    <select id="jobStatusSelect">
+                      <option>Reported</option>
+                      <option>Reviewed</option>
+                      <option>Awaiting tenant availability</option>
+                      <option>Assigned to tradesperson</option>
+                      <option>Appointment proposed</option>
+                      <option>Appointment confirmed</option>
+                      <option>In progress</option>
+                      <option>Completed</option>
+                      <option>Tenant confirmation pending</option>
+                      <option>Closed</option>
+                      <option>Cancelled</option>
+                    </select>
+                  </label>
+                  <label>
+                    Proposed appointment
+                    <input id="appointmentProposal" placeholder="Tuesday 2pm-4pm" />
+                  </label>
+                </div>
+                <div class="split">
+                  <label>
+                    Estimated cost
+                    <input id="estimatedCost" type="number" min="0" step="0.01" />
+                  </label>
+                  <label>
+                    Actual cost
+                    <input id="actualCost" type="number" min="0" step="0.01" />
+                  </label>
+                </div>
+                <label>
+                  Invoice or receipt
+                  <input id="invoiceUpload" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                </label>
+                <div class="row-actions property-form-actions">
+                  <button class="secondary-button" type="button" id="saveCoordinationBtn">Save coordination</button>
+                  <button class="secondary-button" type="button" id="closeRepairBtn">Close repair</button>
+                  <button class="secondary-button danger-button" type="button" id="deleteRepairBtn">Delete repair</button>
+                </div>
+              </section>
+
+              <label class="assignment">
+                Assign tradesperson
+                <select id="contractorSelect">
+                  <option>Northline Plumbing Ltd</option>
+                  <option>BrightSpark Electrical</option>
+                  <option>Heatwise Boiler Care</option>
+                  <option>DryHome Damp Specialists</option>
+                </select>
+              </label>
+
+              <button class="primary-button" type="button" id="assignBtn">
+                <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></svg>
+                Assign repair
+              </button>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="tradesPanel">
+          <div class="portal-hero trades-portal-hero">
+            <div>
+              <p class="eyebrow">Tradesperson portal</p>
+              <h2>Today’s assigned jobs, visit times, photos, and updates.</h2>
+              <p>Built for quick use on site: accept work, propose appointments, update progress, and upload invoices.</p>
+            </div>
+          </div>
+          <div class="metrics-grid">
+            <article class="metric-card">
+              <span class="stat-icon blue" aria-hidden="true">J</span>
+              <span>Assigned jobs</span>
+              <strong id="tradesAssignedCount">0</strong>
+              <small>visible to this tradesperson</small>
+            </article>
+            <article class="metric-card warning">
+              <span class="stat-icon orange" aria-hidden="true">V</span>
+              <span>Upcoming visits</span>
+              <strong id="tradesUpcomingCount">0</strong>
+              <small>proposed or confirmed</small>
+            </article>
+            <article class="metric-card calm">
+              <span class="stat-icon green" aria-hidden="true">C</span>
+              <span>Completed</span>
+              <strong id="tradesCompletedCount">0</strong>
+              <small>ready for invoice or tenant sign-off</small>
+            </article>
+            <article class="metric-card">
+              <span class="stat-icon" aria-hidden="true">£</span>
+              <span>Invoices</span>
+              <strong id="tradesInvoiceCount">0</strong>
+              <small>prototype payment queue</small>
+            </article>
+          </div>
+          <div class="documents-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Tradesperson jobs</h2>
+                  <p>Only assigned or permitted open jobs appear here.</p>
+                </div>
+              </div>
+              <div class="tenant-list" id="tradesJobList"></div>
+            </section>
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Job workflow</h2>
+                  <p>Accept jobs, propose visits, update progress, add notes, and upload invoices.</p>
+                </div>
+              </div>
+              <div id="tradesJobDetail" class="property-detail-stack">
+                <div class="empty-state">Select a job to manage it.</div>
+              </div>
+              <div class="property-upload-card">
+                <h3>Update selected job</h3>
+                <div class="form-stack">
+                  <label>
+                    Proposed visit time
+                    <input id="tradesProposedTime" placeholder="Tuesday 2pm-4pm" />
+                  </label>
+                  <label>
+                    Work notes
+                    <textarea id="tradesWorkNotes" rows="4" placeholder="Access notes, work completed, follow-up needed"></textarea>
+                  </label>
+                  <label>
+                    Invoice / receipt
+                    <input id="tradesInvoiceFile" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                  </label>
+                  <div class="row-actions property-form-actions">
+                    <button class="secondary-button" type="button" id="tradesAcceptBtn">Accept</button>
+                    <button class="secondary-button" type="button" id="tradesDeclineBtn">Decline</button>
+                    <button class="secondary-button" type="button" id="tradesEnRouteBtn">En route</button>
+                    <button class="secondary-button" type="button" id="tradesArrivedBtn">Arrived</button>
+                    <button class="primary-button" type="button" id="tradesCompleteBtn">Mark complete</button>
+                    <button class="secondary-button" type="button" id="tradesSaveBtn">Save notes/invoice</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="landlordPanel">
+          <div class="portal-hero landlord-portal-hero">
+            <div>
+              <p class="eyebrow">Landlord portal</p>
+              <h2>Your owner workspace.</h2>
+              <p>View assigned properties, documents, repairs, rent summaries, and settings once an agency connects your records.</p>
+            </div>
+          </div>
+          <nav class="tenant-home-nav" aria-label="Landlord navigation">
+            <a href="#landlordDashboard">Dashboard</a>
+            <a href="#landlordProperties">My properties</a>
+            <a href="#landlordRepairs">Repairs</a>
+            <a href="#landlordDocuments">Documents</a>
+            <a href="#landlordFinancials">Rent / financials</a>
+            <a href="#landlordInvoices">Invoices</a>
+            <a href="#landlordTradespeople">Tradespeople</a>
+            <a href="#landlordMessages">Messages</a>
+            <a href="#landlordSettings">Settings</a>
+          </nav>
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <h2 id="landlordDashboard">No properties assigned yet</h2>
+                <p>This landlord account is active, but no agency/property relationship has been connected yet.</p>
+              </div>
+            </div>
+            <div class="empty-state">No properties assigned yet.</div>
+          </section>
+          <section class="panel" id="landlordProperties">
+            <div class="section-heading"><div><h2>My properties</h2><p>Properties assigned to this landlord will appear here.</p></div></div>
+            <div class="empty-state">No properties assigned yet.</div>
+          </section>
+          <section class="panel" id="landlordRepairs">
+            <div class="section-heading"><div><h2>Repairs</h2><p>Repairs for assigned properties will appear here.</p></div></div>
+            <div class="empty-state">No repairs assigned yet.</div>
+          </section>
+          <section class="panel" id="landlordDocuments">
+            <div class="section-heading"><div><h2>Documents</h2><p>Property documents shared with this landlord will appear here.</p></div></div>
+            <div class="empty-state">No landlord-visible documents yet.</div>
+          </section>
+          <section class="panel" id="landlordFinancials">
+            <div class="section-heading"><div><h2>Rent / financials</h2><p>Rent summaries and owner statements will appear here.</p></div></div>
+            <div class="empty-state">No financial records assigned yet.</div>
+          </section>
+          <section class="panel" id="landlordInvoices">
+            <div class="section-heading"><div><h2>Invoices</h2><p>Invoices linked to assigned properties will appear here.</p></div></div>
+            <div class="empty-state">No invoices assigned yet.</div>
+          </section>
+          <section class="panel" id="landlordTradespeople">
+            <div class="section-heading"><div><h2>Tradespeople / contractors</h2><p>Contractor updates for assigned properties will appear here.</p></div></div>
+            <div class="empty-state">No contractor updates yet.</div>
+          </section>
+          <section class="panel" id="landlordMessages">
+            <div class="section-heading"><div><h2>Messages</h2><p>Agency messages for this landlord will appear here.</p></div></div>
+            <div class="empty-state">No messages yet.</div>
+          </section>
+          <section class="panel" id="landlordSettings">
+            <div class="section-heading"><div><h2>Settings</h2><p>Landlord profile settings will appear here.</p></div></div>
+            <div class="empty-state">No settings available yet.</div>
+          </section>
+        </section>
+
+        <section class="panel-section" id="contractorsPanel">
+          <div class="metrics-grid">
+            <article class="metric-card">
+              <span>Tradespeople</span>
+              <strong id="agencyTradesCount">0</strong>
+              <small>approved or invited contractors</small>
+            </article>
+            <article class="metric-card warning">
+              <span>Assigned jobs</span>
+              <strong id="agencyTradesAssigned">0</strong>
+              <small>currently with tradespeople</small>
+            </article>
+            <article class="metric-card calm">
+              <span>Completed jobs</span>
+              <strong id="agencyTradesCompleted">0</strong>
+              <small>ready for tenant sign-off or invoice</small>
+            </article>
+            <article class="metric-card">
+              <span>Invoices</span>
+              <strong id="agencyTradesInvoices">0</strong>
+              <small>receipts uploaded by tradespeople</small>
+            </article>
+          </div>
+          <div class="documents-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Tradespeople directory</h2>
+                  <p>Agency view of approved contractors, assigned jobs, and contact details.</p>
+                </div>
+                <button class="secondary-inline" type="button" data-panel-target="teamPanel">Invite new</button>
+              </div>
+              <label class="section-search">
+                Search tradespeople
+                <input id="contractorSearch" type="search" placeholder="Name, email, trade, branch..." />
+              </label>
+              <div class="tenant-list" id="agencyTradesList"></div>
+            </section>
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Jobs with tradespeople</h2>
+                  <p>Quick access to repairs assigned to contractors.</p>
+                </div>
+                <button class="secondary-inline" type="button" data-panel-target="ticketsPanel">Open repairs</button>
+              </div>
+              <div class="tenant-list" id="agencyTradesJobs"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="documentsPanel">
+          <div class="metrics-grid">
+            <article class="metric-card">
+              <span>Total documents</span>
+              <strong id="documentsPageTotal">0</strong>
+              <small>all uploaded records</small>
+            </article>
+            <article class="metric-card calm">
+              <span>Tenant-visible</span>
+              <strong id="documentsTenantVisible">0</strong>
+              <small>available in tenant portal</small>
+            </article>
+            <article class="metric-card warning">
+              <span>Due soon</span>
+              <strong id="documentsDueSoon">0</strong>
+              <small>expiry within 30 days</small>
+            </article>
+            <article class="metric-card">
+              <span>Agency only</span>
+              <strong id="documentsPrivate">0</strong>
+              <small>hidden from tenants</small>
+            </article>
+          </div>
+          <div class="documents-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Document register</h2>
+                  <p>Upload tenancy files, certificates, expiry dates, and tenant-visible paperwork.</p>
+                </div>
+              </div>
+              <div class="document-toolbar">
+                <label>
+                  Search documents
+                  <input id="documentSearch" type="search" placeholder="Document type, property, file name..." />
+                </label>
+                <label>
+                  Property filter
+                  <select id="documentPropertyFilter">
+                    <option value="all">All properties</option>
+                    <option>Flat 4, 18 Albion Road, London</option>
+                    <option>7 Mason Street, London</option>
+                    <option>21 Park View, London</option>
+                  </select>
+                </label>
+                <label>
+                  Visibility
+                  <select id="documentVisibilityFilter">
+                    <option value="all">All documents</option>
+                    <option value="tenant">Tenant-visible</option>
+                    <option value="private">Agency only</option>
+                  </select>
+                </label>
+                <label>
+                  Status
+                  <select id="documentStatusFilter">
+                    <option value="all">All statuses</option>
+                    <option value="expired">Expired</option>
+                    <option value="due">Due soon</option>
+                    <option value="valid">Valid</option>
+                    <option value="stored">No expiry</option>
+                  </select>
+                </label>
+              </div>
+              <div class="document-list" id="documentList"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Upload paperwork</h2>
+                  <p>Store the file record now; a real backend can upload the actual file later.</p>
+                </div>
+              </div>
+              <form class="form-stack" id="documentForm">
+                <label>
+                  Property
+                  <select id="documentProperty">
+                    <option>Flat 4, 18 Albion Road, London</option>
+                    <option>7 Mason Street, London</option>
+                    <option>21 Park View, London</option>
+                  </select>
+                </label>
+                <label>
+                  Document type
+                  <select id="documentType">
+                    <option>Tenancy agreement</option>
+                    <option>Gas safety certificate</option>
+                    <option>Electrical safety certificate / EICR</option>
+                    <option>EPC</option>
+                    <option>Deposit certificate</option>
+                    <option>Inventory and check-in</option>
+                    <option>Right to rent evidence</option>
+                    <option>Landlord instruction</option>
+                    <option>Insurance document</option>
+                    <option>Other property document</option>
+                  </select>
+                </label>
+                <label>
+                  File
+                  <input id="documentFile" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                </label>
+                <div class="split">
+                  <label>
+                    Issue date
+                    <input id="documentIssueDate" type="date" />
+                  </label>
+                  <label>
+                    Valid for
+                    <select id="documentValidityYears">
+                      <option value="">No automatic expiry</option>
+                      <option value="1">1 year</option>
+                      <option value="5" selected>5 years</option>
+                      <option value="10">10 years</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="split">
+                  <label>
+                    Expiry date
+                    <input id="documentExpiry" type="date" />
+                  </label>
+                  <label>
+                    Visibility
+                    <select id="documentVisibility">
+                      <option value="tenant">Tenant can view</option>
+                      <option value="private">Agency only</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  Notes
+                  <textarea id="documentNotes" rows="3" placeholder="Example: renewal booked, tenant signature pending, landlord copy received"></textarea>
+                </label>
+                <button class="primary-button" type="submit">
+                  <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
+                  Add document
+                </button>
+              </form>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="councilsPanel">
+          <div class="documents-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Council lookup</h2>
+                  <p>Use postcode as the source of truth. The app checks Postcodes.io first, then GOV.UK if needed.</p>
+                </div>
+              </div>
+              <div class="document-toolbar">
+                <label>
+                  Postcode
+                  <input id="councilPostcodeSearch" placeholder="Example: EN5 5XY" autocomplete="postal-code" />
+                </label>
+                <button class="primary-button" type="button" id="lookupCouncilBtn">Check council</button>
+              </div>
+              <div id="councilLookupResult" class="council-result">
+                <div class="empty-state">Enter a UK postcode to detect the council/local authority.</div>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Cached lookups</h2>
+                  <p>Recently checked postcodes are stored so the app does not call external services repeatedly.</p>
+                </div>
+              </div>
+              <label class="section-search">
+                Search cached lookups
+                <input id="boroughSearch" type="search" placeholder="Postcode, council, source..." />
+              </label>
+              <div class="tenant-list" id="boroughList"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="teamPanel">
+          <div class="documents-grid">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Agency team access</h2>
+                  <p>Invite staff and control what each person can access.</p>
+                </div>
+              </div>
+              <div class="tenant-list" id="teamList"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Invite team member</h2>
+                  <p>In the real SaaS this sends an email invite and creates a secure user account.</p>
+                </div>
+              </div>
+              <form class="form-stack" id="teamForm">
+                <label>
+                  Full name
+                  <input id="teamFullName" value="Aisha Morgan" />
+                </label>
+                <label>
+                  Email
+                  <input id="teamEmail" type="email" value="aisha@harbourlettings.example" />
+                </label>
+                <div class="split">
+                  <label>
+                    Role
+                    <select id="teamRole">
+                      <option value="agency_admin">Agency admin</option>
+                      <option value="property_manager" selected>Property manager</option>
+                      <option value="contractor">Contractor</option>
+                      <option value="landlord">Landlord</option>
+                    </select>
+                  </label>
+                  <label>
+                    Branch
+                    <select id="teamBranch">
+                      <option>London</option>
+                      <option>Manchester</option>
+                      <option>Birmingham</option>
+                      <option>All branches</option>
+                    </select>
+                  </label>
+                </div>
+                <button class="primary-button" type="submit">
+                  <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" /></svg>
+                  Send invite
+                </button>
+              </form>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel-section" id="settingsPanel">
+          <div class="two-column">
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Agency customisation</h2>
+                  <p>Make each B2B client feel like the app belongs to them.</p>
+                </div>
+              </div>
+              <form class="form-stack" id="brandForm">
+                <label>
+                  Agency name
+                  <input id="agencyName" value="Harbour & Co Lettings" />
+                </label>
+                <label>
+                  Portal subtitle
+                  <input id="agencySubtitle" value="Tenant and landlord services" />
+                </label>
+                <div class="split">
+                  <label>
+                    Primary colour
+                    <input id="primaryColour" type="color" value="#14745f" />
+                  </label>
+                  <label>
+                    Repair approval threshold
+                    <select>
+                      <option>GBP 150</option>
+                      <option selected>GBP 250</option>
+                      <option>GBP 500</option>
+                    </select>
+                  </label>
+                </div>
+                <button class="primary-button" type="submit">
+                  <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2ZM17 21v-8H7v8M7 3v5h8" /></svg>
+                  Apply branding
+                </button>
+              </form>
+            </section>
+
+            <section class="panel">
+              <div class="section-heading">
+                <div>
+                  <h2>Configured services</h2>
+                  <p>Agency-specific routing rules.</p>
+                </div>
+              </div>
+              <div class="rules-list">
+                <div><strong>Water leak</strong><span>Route to plumber - emergency SLA 4 hours</span></div>
+                <div><strong>Electrical problem</strong><span>Route to electrician - emergency SLA 2 hours</span></div>
+                <div><strong>Damp or mould</strong><span>Route to property manager - inspection required</span></div>
+                <div><strong>Quotes over GBP 250</strong><span>Require landlord approval before assignment</span></div>
+              </div>
+              <button class="secondary-button reset-data" type="button" id="resetDataBtn">Reset demo data</button>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="modal" id="documentModal" aria-hidden="true">
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="documentModalTitle">
+        <div class="section-heading">
+          <div>
+            <h2 id="documentModalTitle">Document preview</h2>
+            <p id="documentModalMeta">Preview</p>
+          </div>
+          <button class="icon-button" type="button" id="closeDocumentModal" aria-label="Close preview">
+            <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div class="preview-box" id="documentPreviewBox"></div>
+      </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/auth-config.generated.js?v=20260507-auth-config-2"></script>
+    <script src="postcodeLookup.js?v=20260504-london-council-websites"></script>
+    <script src="app.js?v=20260509-refresh-auth-guard-v1"></script>
+  </body>
+</html>

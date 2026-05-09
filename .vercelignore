@@ -1,0 +1,11 @@
+node_modules
+outputs
+database
+scripts
+docs
+elec-connect-*
+*.tar
+*.log
+OPEN_PROP_FLOW.txt
+start-propflow.bat
+start-propflow-phone.bat

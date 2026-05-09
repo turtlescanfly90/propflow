@@ -1,0 +1,20 @@
+.vercel/
+node_modules/
+
+# Local secrets and generated auth files
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+auth-config.generated.js
+debug-auth.html
+
+# Generated outputs and old experimental worktrees
+outputs/
+elec-connect-*/
+*.tar
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

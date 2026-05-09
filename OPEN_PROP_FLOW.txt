@@ -1,0 +1,18 @@
+To open the app:
+
+1. Open this folder:
+   C:\Users\cihat\Documents\Codex\2026-04-28\can-i-make-apps-with-you
+
+2. Double-click:
+   start-propflow.bat
+
+3. A browser should open at:
+   http://127.0.0.1:5173/
+
+Keep the black server window open while using the app.
+
+If the browser does not open automatically, copy this into your browser:
+http://127.0.0.1:5173/
+
+Fallback:
+Double-click index.html in the same folder.

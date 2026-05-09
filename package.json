@@ -1,0 +1,9 @@
+{
+  "name": "propflow",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node generate-auth-config.js",
+    "vercel-build": "node generate-auth-config.js"
+  }
+}

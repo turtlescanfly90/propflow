@@ -1,0 +1,4 @@
+window.PropFlowAuthConfig = {
+  supabaseUrl: "",
+  supabaseAnonKey: "",
+};
