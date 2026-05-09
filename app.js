@@ -466,7 +466,7 @@ const propFlowAuth = {
   user: null,
   profile: null,
 };
-const propFlowBuildId = "20260509-role-portal-isolation-v1";
+const propFlowBuildId = "20260509-issue1-role-portals-v1";
 let selectedTicketId = state.tickets[0]?.id || "";
 let ticketFilter = "all";
 let repairRouteFilter = {};
@@ -841,7 +841,7 @@ function showSignupConfirmation(email) {
   const confirmationEmail = document.querySelector("#confirmationEmail");
   if (confirmationEmail) confirmationEmail.textContent = email;
   showAuthPanel("confirm");
-  setAuthMessage("Account created. Confirm your email before signing in.");
+  setAuthMessage(`We've sent a confirmation link to ${email}. Please confirm your email before signing in.`);
 }
 
 function hasAuthenticatedRole() {
@@ -1254,6 +1254,16 @@ function authorisedTenant() {
 }
 
 function renderSession() {
+  if (!hasAuthenticatedRole()) {
+    document.body.dataset.userType = "unknown";
+    setText("signedInUser", "Signed out");
+    setText("accountName", "Signed out");
+    setText("accountRole", "Sign in required");
+    setText("accountInitials", "SO");
+    renderRoleNavigation("denied");
+    setAuthScreenVisible(true);
+    return;
+  }
   const user = currentUser();
   const portal = portalForUser(user);
   const label = user.type === "tenant" ? "Tenant" : user.type === "contractor" ? "Tradesperson" : user.type === "landlord" ? "Landlord" : roleLabel(user.role || "agency_admin");
@@ -4845,7 +4855,7 @@ document.querySelectorAll("[data-tenant-report-focus]").forEach((button) => {
 
 async function bootstrapApp() {
   applyBranding();
-  setPortalMode("agency");
+  setAuthScreenVisible(true);
   updateMetrics();
   renderTickets();
   renderDocuments();
@@ -4856,7 +4866,6 @@ async function bootstrapApp() {
   renderFinance();
   renderNotifications();
   renderDashboardAttention();
-  renderSession();
   renderTradesDashboard();
   renderBoroughList();
   registerPhoneAppServiceWorker();
