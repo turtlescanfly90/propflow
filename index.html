@@ -538,6 +538,22 @@
 
         <section class="panel-section" id="tenantPanel">
           <div class="tenant-home-shell">
+            <section class="tenant-activation-card tenant-card-surface" id="tenantActivation">
+              <div>
+                <p class="eyebrow">Tenant activation</p>
+                <h2>Link your home</h2>
+                <p>Enter the activation code from your agency to connect this login to your tenancy and property.</p>
+              </div>
+              <form class="activation-form" id="tenantActivationForm">
+                <label>
+                  Activation code
+                  <input id="tenantActivationCode" placeholder="PF-123456" autocomplete="one-time-code" />
+                </label>
+                <button class="primary-button" type="submit">Activate property</button>
+              </form>
+              <div class="empty-state">No property assigned yet. Contact your agency if you do not have a code.</div>
+            </section>
+
             <section class="tenant-home-hero" id="tenantHome">
               <div>
                 <p class="eyebrow">Tenant portal</p>
@@ -822,6 +838,19 @@
                   Tenant can view tenant-visible documents for this property
                 </label>
                 <button class="secondary-button" type="button" id="saveTenantAccessBtn">Save access</button>
+              </div>
+              <div class="access-control-card">
+                <h3>Tenant activation code</h3>
+                <p>Generate one code for this tenant so they can link their login to the correct property.</p>
+                <label>
+                  Activation code
+                  <input id="tenantActivationCodeAgency" readonly placeholder="No code generated yet" />
+                </label>
+                <div class="row-actions property-form-actions">
+                  <button class="secondary-button" type="button" id="generateTenantActivationBtn">Generate code</button>
+                  <button class="secondary-button" type="button" id="copyTenantActivationBtn">Copy code</button>
+                </div>
+                <small id="tenantActivationMeta">Select or save a tenant first.</small>
               </div>
             </section>
           </div>
@@ -1613,6 +1642,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/auth-config.generated.js?v=20260507-auth-config-2"></script>
     <script src="postcodeLookup.js?v=20260504-london-council-websites"></script>
-    <script src="app.js?v=20260509-tenant-actions-v1"></script>
+    <script src="app.js?v=20260509-issue3-tenant-activation-v1"></script>
   </body>
 </html>

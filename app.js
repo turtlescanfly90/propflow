@@ -466,7 +466,7 @@ const propFlowAuth = {
   user: null,
   profile: null,
 };
-const propFlowBuildId = "20260509-tenant-actions-v1";
+const propFlowBuildId = "20260509-issue3-tenant-activation-v1";
 let selectedTicketId = state.tickets[0]?.id || "";
 let ticketFilter = "all";
 let repairRouteFilter = {};
@@ -765,6 +765,40 @@ function saveState() {
 
 function storageKeyForUser(user) {
   return `${userStoragePrefix}-${user.id}`;
+}
+
+function normaliseActivationCode(value) {
+  const cleaned = String(value || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!cleaned) return "";
+  if (cleaned.startsWith("PF")) return `PF-${cleaned.slice(2)}`;
+  return cleaned;
+}
+
+function generateActivationCode() {
+  return `PF-${Math.floor(100000 + Math.random() * 900000)}`;
+}
+
+function readWorkspaceByKey(key) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(key));
+    if (saved && typeof saved === "object") return normaliseWorkspaceState(saved, emptyWorkspaceState());
+  } catch (error) {
+    console.warn("Could not read workspace", key, error);
+  }
+  return emptyWorkspaceState();
+}
+
+function writeWorkspaceByKey(key, workspace) {
+  localStorage.setItem(key, JSON.stringify(workspace));
+}
+
+function workspaceKeys() {
+  const keys = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key === storageKey || key?.startsWith(userStoragePrefix)) keys.push(key);
+  }
+  return keys;
 }
 
 function resetWorkspaceSelection() {
@@ -1259,7 +1293,10 @@ function currentUser() {
 function authorisedTenant() {
   const user = currentUser();
   if (user.type !== "tenant") return null;
-  return state.tenants.find((tenant) => tenant.email === user.email) || null;
+  return state.tenants.find((tenant) =>
+    tenant.activatedByUserId === user.id ||
+    String(tenant.activatedEmail || tenant.email || "").toLowerCase() === String(user.email || "").toLowerCase()
+  ) || null;
 }
 
 function renderSession() {
@@ -2723,6 +2760,8 @@ function renderTenantDocuments() {
 
 function renderTenantAccessSummary() {
   const tenant = authorisedTenant();
+  const tenantPanel = document.querySelector("#tenantPanel");
+  if (tenantPanel) tenantPanel.classList.toggle("tenant-locked", currentUser().type === "tenant" && !tenant);
   const tenantDocs = state.documents.filter((documentItem) => documentItem.visibility === "tenant" && documentItem.property === tenant?.address);
   const tenantRepairs = state.tickets.filter((ticket) => ticket.property === tenant?.address && !["Completed", "Closed", "Cancelled"].includes(ticket.status));
   const rent = rentForTenant(tenant?.id);
@@ -3163,6 +3202,37 @@ function addAgencyNotificationForRepair(ticket) {
     status: "new",
     relatedTicketId: ticket.id,
   });
+}
+
+function syncTenantTicketToAgencyWorkspace(ticket) {
+  const tenant = authorisedTenant();
+  const agencyKey = state.linkedAgencyStorageKey || tenant?.sourceAgencyStorageKey;
+  const sourceTenantId = state.linkedSourceTenantId || tenant?.sourceTenantId || tenant?.id;
+  if (!agencyKey || !sourceTenantId) return;
+  const workspace = readWorkspaceByKey(agencyKey);
+  const agencyTenant = workspace.tenants.find((item) => item.id === sourceTenantId);
+  const agencyTicket = {
+    ...ticket,
+    tenantId: sourceTenantId,
+    tenant: agencyTenant?.fullName || ticket.tenant,
+    property: agencyTenant?.address || ticket.property,
+    reportedByEmail: currentUser().email,
+  };
+  if (!workspace.tickets.some((item) => item.id === agencyTicket.id)) {
+    workspace.tickets.unshift(agencyTicket);
+  }
+  workspace.notifications.unshift({
+    id: `NOT-${Math.floor(2000 + Math.random() * 7000)}`,
+    tenantId: sourceTenantId,
+    subject: `New repair reported: ${agencyTicket.title}`,
+    message: `${agencyTicket.tenant} reported ${agencyTicket.title} at ${agencyTicket.property}. Urgency: ${agencyTicket.priority}. ${agencyTicket.description}`,
+    channel: "in_app",
+    priority: agencyTicket.priority === "Routine" ? "normal" : "urgent",
+    status: "new",
+    relatedTicketId: agencyTicket.id,
+    createdAt: agencyTicket.createdAt || new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+  });
+  writeWorkspaceByKey(agencyKey, workspace);
 }
 
 function sendTenantMessageToAgency() {
@@ -4057,6 +4127,7 @@ function fillTenantForm(id) {
   document.querySelector("#tenantStartDate").value = tenant.tenancyStart;
   document.querySelector("#tenantAccessPropertySelect").value = tenant.address;
   document.querySelector("#tenantCanViewDocs").checked = tenant.canViewDocs !== false;
+  renderTenantActivationCodePanel(tenant);
   showToast(`${tenant.fullName} loaded into the tenant form.`);
 }
 
@@ -4069,6 +4140,7 @@ function clearTenantForm() {
   document.querySelector("#tenantPostcode").value = "";
   document.querySelector("#tenantStartDate").value = new Date().toISOString().slice(0, 10);
   document.querySelector("#tenantCanViewDocs").checked = true;
+  renderTenantActivationCodePanel(null);
   showToast("Tenant form is ready for a new tenant.");
 }
 
@@ -4167,6 +4239,7 @@ function saveTenantFromForm() {
   document.querySelector("#tenantId").value = tenant.id;
   if (!existing) state.tenants.unshift(tenant);
   saveState();
+  renderTenantActivationCodePanel(tenant);
   renderTenants();
   renderProperties();
   renderSession();
@@ -4188,6 +4261,130 @@ function saveTenantAccess() {
   renderProperties();
   renderSession();
   showToast(`${tenant.fullName}'s app access has been updated.`);
+}
+
+function renderTenantActivationCodePanel(tenant = null) {
+  const input = document.querySelector("#tenantActivationCodeAgency");
+  const meta = document.querySelector("#tenantActivationMeta");
+  if (!input || !meta) return;
+  if (!tenant) {
+    input.value = "";
+    meta.textContent = "Select or save a tenant first.";
+    return;
+  }
+  input.value = tenant.activationCode || "";
+  if (!tenant.activationCode) {
+    meta.textContent = "No activation code generated yet.";
+    return;
+  }
+  meta.textContent = tenant.activationUsedAt
+    ? `Activated by ${tenant.activatedEmail || "tenant"} on ${tenant.activationUsedAt}.`
+    : "Ready to share with the tenant.";
+}
+
+function selectedTenantFromForm() {
+  const id = document.querySelector("#tenantId")?.value;
+  const email = document.querySelector("#tenantEmail")?.value.trim().toLowerCase();
+  const fullName = document.querySelector("#tenantFullName")?.value.trim();
+  return state.tenants.find((tenant) => tenant.id === id)
+    || state.tenants.find((tenant) => email && tenant.email.toLowerCase() === email)
+    || state.tenants.find((tenant) => fullName && tenant.fullName === fullName)
+    || null;
+}
+
+function generateTenantActivationCode() {
+  let tenant = selectedTenantFromForm();
+  if (!tenant) {
+    saveTenantFromForm();
+    tenant = selectedTenantFromForm();
+  }
+  if (!tenant) {
+    showToast("Save the tenant first, then generate a code.");
+    return;
+  }
+  if (!tenant.activationCode) {
+    const existingCodes = new Set(state.tenants.map((item) => item.activationCode).filter(Boolean));
+    let code = generateActivationCode();
+    while (existingCodes.has(code)) code = generateActivationCode();
+    tenant.activationCode = code;
+    tenant.activationCreatedAt = new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+  saveState();
+  renderTenants();
+  renderTenantActivationCodePanel(tenant);
+  showToast(`Activation code ready for ${tenant.fullName}.`);
+}
+
+async function copyTenantActivationCode() {
+  const tenant = selectedTenantFromForm();
+  if (!tenant?.activationCode) {
+    showToast("Generate an activation code first.");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(tenant.activationCode);
+    showToast("Activation code copied.");
+  } catch (error) {
+    document.querySelector("#tenantActivationCodeAgency").select();
+    showToast("Code selected. Copy it manually with Ctrl+C.");
+  }
+}
+
+function findTenantActivationByCode(code) {
+  const normalisedCode = normaliseActivationCode(code);
+  if (!normalisedCode) return null;
+  for (const key of workspaceKeys()) {
+    const workspace = readWorkspaceByKey(key);
+    const tenant = workspace.tenants.find((item) => item.activationCode === normalisedCode);
+    if (tenant) return { key, workspace, tenant };
+  }
+  return null;
+}
+
+function activateTenantWithCode(code) {
+  const user = currentUser();
+  if (user.type !== "tenant") {
+    showToast("Only tenant accounts can use activation codes.");
+    return;
+  }
+  const match = findTenantActivationByCode(code);
+  if (!match) {
+    showToast("Activation code not found. Check the code from your agency.");
+    return;
+  }
+
+  const { key, workspace, tenant } = match;
+  const property = workspace.properties.find((item) => item.address === tenant.address);
+  const tenantRecord = {
+    ...tenant,
+    sourceTenantId: tenant.id,
+    sourceAgencyStorageKey: key,
+    email: user.email,
+    activatedEmail: user.email,
+    activatedByUserId: user.id,
+    activationUsedAt: new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
+  };
+  state.tenants = [tenantRecord];
+  state.properties = property ? [property] : [];
+  state.documents = workspace.documents.filter((documentItem) => documentItem.property === tenant.address && documentItem.visibility === "tenant");
+  state.rentItems = workspace.rentItems.filter((item) => item.tenantId === tenant.id).map((item) => ({ ...item, tenantId: tenantRecord.id }));
+  state.tickets = workspace.tickets.filter((ticket) => ticket.tenantId === tenant.id || ticket.property === tenant.address);
+  state.notifications = workspace.notifications.filter((notification) => notification.tenantId === tenant.id).map((notification) => ({ ...notification, tenantId: tenantRecord.id }));
+  state.linkedAgencyStorageKey = key;
+  state.linkedSourceTenantId = tenant.id;
+  state.linkedPropertyAddress = tenant.address;
+
+  const agencyTenant = workspace.tenants.find((item) => item.id === tenant.id);
+  if (agencyTenant) {
+    agencyTenant.activatedEmail = user.email;
+    agencyTenant.activatedByUserId = user.id;
+    agencyTenant.activationUsedAt = tenantRecord.activationUsedAt;
+  }
+  writeWorkspaceByKey(key, workspace);
+  saveState();
+  renderWorkspace();
+  renderSession();
+  showToast("Property activated. Your tenant portal is ready.");
 }
 
 function csvEscape(value) {
@@ -4658,6 +4855,7 @@ document.querySelector("#repairForm").addEventListener("submit", async (event) =
   if (!newTicket) return;
   state.tickets.unshift(newTicket);
   addAgencyNotificationForRepair(newTicket);
+  syncTenantTicketToAgencyWorkspace(newTicket);
   selectedTicketId = newTicket.id;
   ticketFilter = "all";
   saveState();
@@ -4859,6 +5057,13 @@ document.querySelector("#clearTenantFormBtn").addEventListener("click", clearTen
 document.querySelector("#useTenantAccessPropertyBtn").addEventListener("click", useTenantAccessPropertyInForm);
 document.querySelector("#addTenantPropertyBtn").addEventListener("click", addTenantPropertyFromForm);
 document.querySelector("#saveTenantAccessBtn").addEventListener("click", saveTenantAccess);
+document.querySelector("#generateTenantActivationBtn").addEventListener("click", generateTenantActivationCode);
+document.querySelector("#copyTenantActivationBtn").addEventListener("click", copyTenantActivationCode);
+
+document.querySelector("#tenantActivationForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  activateTenantWithCode(document.querySelector("#tenantActivationCode").value);
+});
 
 document.querySelector("#teamForm").addEventListener("submit", (event) => {
   event.preventDefault();

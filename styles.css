@@ -1848,6 +1848,36 @@ textarea:focus {
   padding: 26px;
 }
 
+.tenant-activation-card {
+  display: none;
+  gap: 22px;
+  padding: 28px;
+}
+
+.tenant-locked .tenant-activation-card {
+  display: grid;
+}
+
+.tenant-locked .tenant-home-hero,
+.tenant-locked .tenant-property-card,
+.tenant-locked .tenant-primary-action,
+.tenant-locked .tenant-section-card:not(#tenantActivation) {
+  display: none;
+}
+
+.activation-form {
+  display: grid;
+  gap: 14px;
+  max-width: 460px;
+}
+
+.activation-form input,
+#tenantActivationCodeAgency {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
 .tenant-card-heading {
   display: grid;
   gap: 8px;
