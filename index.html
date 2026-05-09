@@ -538,16 +538,6 @@
 
         <section class="panel-section" id="tenantPanel">
           <div class="tenant-home-shell">
-            <nav class="tenant-home-nav" aria-label="Tenant navigation">
-              <a href="#tenantHome">Home</a>
-              <a href="#tenantReportRepair">Report repair</a>
-              <a href="#tenantRepairs">My repairs</a>
-              <a href="#tenantDocuments">Documents</a>
-              <a href="#tenantRent">Rent</a>
-              <a href="#tenantMessages">Messages</a>
-              <a href="#tenantProfile">Profile/settings</a>
-            </nav>
-
             <section class="tenant-home-hero" id="tenantHome">
               <div>
                 <p class="eyebrow">Tenant portal</p>
@@ -1204,57 +1194,47 @@
               <p>View assigned properties, documents, repairs, rent summaries, and settings once an agency connects your records.</p>
             </div>
           </div>
-          <nav class="tenant-home-nav" aria-label="Landlord navigation">
-            <a href="#landlordDashboard">Dashboard</a>
-            <a href="#landlordProperties">My properties</a>
-            <a href="#landlordRepairs">Repairs</a>
-            <a href="#landlordDocuments">Documents</a>
-            <a href="#landlordFinancials">Rent / financials</a>
-            <a href="#landlordInvoices">Invoices</a>
-            <a href="#landlordTradespeople">Tradespeople</a>
-            <a href="#landlordMessages">Messages</a>
-            <a href="#landlordSettings">Settings</a>
-          </nav>
           <section class="panel">
             <div class="section-heading">
               <div>
-                <h2 id="landlordDashboard">No properties assigned yet</h2>
-                <p>This landlord account is active, but no agency/property relationship has been connected yet.</p>
+                <h2 id="landlordDashboard">Landlord dashboard</h2>
+                <p id="landlordDashboardMeta">Only properties linked to this landlord account appear here.</p>
               </div>
             </div>
-            <div class="empty-state">No properties assigned yet.</div>
+            <div class="detail-grid" id="landlordSummaryGrid"></div>
+            <div class="empty-state" id="landlordEmptyState">No properties assigned yet.</div>
           </section>
           <section class="panel" id="landlordProperties">
             <div class="section-heading"><div><h2>My properties</h2><p>Properties assigned to this landlord will appear here.</p></div></div>
-            <div class="empty-state">No properties assigned yet.</div>
+            <div class="tenant-list" id="landlordPropertyList"></div>
           </section>
           <section class="panel" id="landlordRepairs">
             <div class="section-heading"><div><h2>Repairs</h2><p>Repairs for assigned properties will appear here.</p></div></div>
-            <div class="empty-state">No repairs assigned yet.</div>
+            <div class="tenant-list" id="landlordRepairList"></div>
           </section>
           <section class="panel" id="landlordDocuments">
             <div class="section-heading"><div><h2>Documents</h2><p>Property documents shared with this landlord will appear here.</p></div></div>
-            <div class="empty-state">No landlord-visible documents yet.</div>
+            <div class="tenant-list" id="landlordDocumentList"></div>
           </section>
           <section class="panel" id="landlordFinancials">
             <div class="section-heading"><div><h2>Rent / financials</h2><p>Rent summaries and owner statements will appear here.</p></div></div>
-            <div class="empty-state">No financial records assigned yet.</div>
+            <div class="tenant-list" id="landlordFinancialList"></div>
           </section>
           <section class="panel" id="landlordInvoices">
             <div class="section-heading"><div><h2>Invoices</h2><p>Invoices linked to assigned properties will appear here.</p></div></div>
-            <div class="empty-state">No invoices assigned yet.</div>
+            <div class="tenant-list" id="landlordInvoiceList"></div>
           </section>
           <section class="panel" id="landlordTradespeople">
             <div class="section-heading"><div><h2>Tradespeople / contractors</h2><p>Contractor updates for assigned properties will appear here.</p></div></div>
-            <div class="empty-state">No contractor updates yet.</div>
+            <div class="tenant-list" id="landlordTradesList"></div>
           </section>
           <section class="panel" id="landlordMessages">
             <div class="section-heading"><div><h2>Messages</h2><p>Agency messages for this landlord will appear here.</p></div></div>
-            <div class="empty-state">No messages yet.</div>
+            <div class="tenant-list" id="landlordMessageList"></div>
           </section>
           <section class="panel" id="landlordSettings">
             <div class="section-heading"><div><h2>Settings</h2><p>Landlord profile settings will appear here.</p></div></div>
-            <div class="empty-state">No settings available yet.</div>
+            <div class="tenant-list" id="landlordSettingsList"></div>
           </section>
         </section>
 
@@ -1622,6 +1602,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/auth-config.generated.js?v=20260507-auth-config-2"></script>
     <script src="postcodeLookup.js?v=20260504-london-council-websites"></script>
-    <script src="app.js?v=20260509-refresh-auth-guard-v1"></script>
+    <script src="app.js?v=20260509-role-portal-isolation-v1"></script>
   </body>
 </html>

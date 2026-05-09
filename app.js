@@ -466,7 +466,7 @@ const propFlowAuth = {
   user: null,
   profile: null,
 };
-const propFlowBuildId = "20260509-refresh-auth-guard-v1";
+const propFlowBuildId = "20260509-role-portal-isolation-v1";
 let selectedTicketId = state.tickets[0]?.id || "";
 let ticketFilter = "all";
 let repairRouteFilter = {};
@@ -554,12 +554,12 @@ const roleNavConfigs = {
     { label: "Settings", panel: "landlordPanel", route: "/landlord/settings", anchor: "landlordSettings", icon: "settings" },
   ],
   trades: [
-    { label: "Jobs", panel: "tradesPanel", route: "/tradesperson/jobs", icon: "dashboard" },
-    { label: "Assigned repairs", panel: "tradesPanel", route: "/tradesperson/assigned-repairs", icon: "repair" },
-    { label: "Schedule", panel: "tradesPanel", route: "/tradesperson/schedule", icon: "schedule" },
-    { label: "Invoices", panel: "tradesPanel", route: "/tradesperson/invoices", icon: "invoice" },
-    { label: "Messages", panel: "tradesPanel", route: "/tradesperson/messages", icon: "message" },
-    { label: "Settings", panel: "tradesPanel", route: "/tradesperson/settings", icon: "settings" },
+    { label: "Jobs", panel: "tradesPanel", route: "/trades/jobs", icon: "dashboard" },
+    { label: "Assigned repairs", panel: "tradesPanel", route: "/trades/assigned-repairs", icon: "repair" },
+    { label: "Schedule", panel: "tradesPanel", route: "/trades/schedule", icon: "schedule" },
+    { label: "Invoices", panel: "tradesPanel", route: "/trades/invoices", icon: "invoice" },
+    { label: "Messages", panel: "tradesPanel", route: "/trades/messages", icon: "message" },
+    { label: "Settings", panel: "tradesPanel", route: "/trades/settings", icon: "settings" },
   ],
 };
 
@@ -786,6 +786,7 @@ function renderWorkspace() {
   renderNotifications();
   renderDashboardAttention();
   renderTradesDashboard();
+  renderLandlordPortal();
   renderBoroughList();
   selectTicket(selectedTicketId);
   updateTenantPreview();
@@ -874,7 +875,7 @@ function pathForPanel(panelId) {
     teamPanel: "/agency/team",
     settingsPanel: "/agency/settings",
     tenantPanel: "/tenant/home",
-    tradesPanel: "/tradesperson/jobs",
+    tradesPanel: "/trades/jobs",
     landlordPanel: "/landlord/dashboard",
   }[panelId] || "/";
 }
@@ -1054,7 +1055,7 @@ function showPanel(panelId) {
   }
 
   sections.forEach((section) => section.classList.toggle("active", section.id === panelId));
-  navItems.forEach((item) => item.classList.toggle("active", item.dataset.panel === panelId));
+  setActiveNavItem(panelId);
   document.querySelector(`#${panelId}`).scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -1063,18 +1064,19 @@ function routeToPanel(panelId, params = {}) {
     redirectToLogin();
     return;
   }
-  const query = new URLSearchParams(params);
-  const path = pathForPanel(panelId);
+  const allowedPanel = allowedPanelForUser(currentUser(), panelId);
+  const query = new URLSearchParams(allowedPanel === panelId ? params : {});
+  const path = pathForPanel(allowedPanel);
   const suffix = query.toString() ? `?${query.toString()}` : "";
   window.history.pushState({}, "", `${path}${suffix}`);
-  if (panelId === "ticketsPanel" && !params.status && !params.urgency) {
+  if (allowedPanel === "ticketsPanel" && !params.status && !params.urgency) {
     repairRouteFilter = {};
     ticketFilter = "all";
     document.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("active", item.dataset.filter === "all"));
     renderTickets();
   }
-  applyRouteFilters(params);
-  showPanel(panelId);
+  applyRouteFilters(allowedPanel === panelId ? params : {});
+  showPanel(allowedPanel);
 }
 
 function applyRouteFilters(params = {}) {
@@ -1126,8 +1128,19 @@ function applyInitialRoute() {
     "";
   const panel = panelFromQuery || pathPanel;
   const params = Object.fromEntries(query.entries());
+  if (!panel) {
+    redirectToRoleHome();
+    return;
+  }
+  const allowedPanel = allowedPanelForUser(currentUser(), panel);
+  if (allowedPanel !== panel) {
+    const allowedPath = pathForPanel(allowedPanel);
+    if (window.location.pathname !== allowedPath) window.history.replaceState({}, "", allowedPath);
+    showPanel(allowedPanel);
+    return;
+  }
   applyRouteFilters(params);
-  if (panel) showPanel(panel);
+  showPanel(panel);
 }
 
 function portalForUser(user) {
@@ -1172,6 +1185,14 @@ function routeToNavItem(item) {
   applyRouteFilters(params);
 }
 
+function setActiveNavItem(panelId) {
+  const currentPath = window.location.pathname.toLowerCase();
+  const routeMatch = navItems.find((item) => item.dataset.route && item.dataset.route.toLowerCase() === currentPath);
+  navItems.forEach((item) => {
+    item.classList.toggle("active", routeMatch ? item === routeMatch : item.dataset.panel === panelId);
+  });
+}
+
 function renderRoleNavigation(portal) {
   const config = roleNavConfigs[portal] || [];
   roleNavList.innerHTML = "";
@@ -1194,9 +1215,11 @@ function renderRoleNavigation(portal) {
 function setPortalMode(mode) {
   document.body.dataset.portal = mode;
   renderRoleNavigation(mode);
+  const portalLabel = mode === "tenant" ? "Tenant portal" : mode === "trades" ? "Tradesperson portal" : mode === "landlord" ? "Landlord portal" : "Agency workspace";
+  setText("brandSub", portalLabel);
   setText(
     "modeEyebrow",
-    mode === "tenant" ? "Tenant self-service portal" : mode === "trades" ? "Tradesperson job workspace" : mode === "landlord" ? "Landlord owner workspace" : "White-label property operations",
+    mode === "tenant" ? "Tenant self-service portal" : mode === "trades" ? "Tradesperson job workspace" : mode === "landlord" ? "Landlord owner workspace" : "Agency operations workspace",
   );
   setText(
     "modeTitle",
@@ -1226,7 +1249,7 @@ function currentUser() {
 
 function authorisedTenant() {
   const user = currentUser();
-  if (user.type !== "tenant") return state.tenants[0];
+  if (user.type !== "tenant") return null;
   return state.tenants.find((tenant) => tenant.email === user.email) || null;
 }
 
@@ -1245,6 +1268,7 @@ function renderSession() {
   renderTenantAccessSummary();
   renderTenantDocuments();
   renderTradesDashboard();
+  renderLandlordPortal();
 }
 
 function initials(name) {
@@ -2640,7 +2664,7 @@ function renderTenantDocuments() {
   const user = currentUser();
   const tenant = authorisedTenant();
   if (user.type === "tenant" && !tenant) {
-    tenantDocumentList.innerHTML = `<div class="empty-state">No property assigned yet.</div>`;
+    tenantDocumentList.innerHTML = `<div class="empty-state">No property assigned yet. Contact your agency.</div>`;
     return;
   }
   const tenantVisibleDocs = state.documents.filter((documentItem) => {
@@ -2680,9 +2704,9 @@ function renderTenantAccessSummary() {
   const agencyContact = property?.landlord ? `Agency / ${property.landlord}` : "Agency";
   setText("tenantAccessName", tenant?.fullName || "No tenant profile assigned");
   setText("tenantAccessEmail", tenant?.email || "-");
-  setText("tenantAccessProperty", tenant?.address || "No property assigned yet");
-  setText("tenantAccessStatus", tenant ? (tenant.status === "active" ? "Active tenancy" : "Tenancy ended") : "No property assigned yet");
-  setText("tenantPropertyAddress", tenant?.address || "No property assigned yet");
+  setText("tenantAccessProperty", tenant?.address || "No property assigned yet. Contact your agency.");
+  setText("tenantAccessStatus", tenant ? (tenant.status === "active" ? "Active tenancy" : "Tenancy ended") : "No property assigned yet. Contact your agency.");
+  setText("tenantPropertyAddress", tenant?.address || "No property assigned yet. Contact your agency.");
   setText("tenantPropertyPostcode", tenant?.postcode || "No postcode added");
   setText("tenantRentAmount", rent ? kpiCurrencyDisplay(rent.amount) : "No schedule");
   setText("tenantRentDueDate", rent ? formatDate(rent.dueDate) : "No schedule");
@@ -2708,6 +2732,10 @@ function renderTenantAccessSummary() {
     repairSubmit.disabled = !tenant;
     repairSubmit.classList.toggle("disabled-button", !tenant);
   }
+  document.querySelectorAll("[data-tenant-report-focus]").forEach((button) => {
+    button.disabled = !tenant;
+    button.classList.toggle("disabled-button", !tenant);
+  });
   setText("tenantCardProperty", tenant?.postcode || "Active tenancy");
   setText("tenantCardDocuments", `${tenantDocs.length} available`);
   setText("tenantCardRepairs", `${tenantRepairs.length} open`);
@@ -2739,6 +2767,10 @@ function renderTenantRepairCards(repairs) {
 function renderTenantUpdates(tenant) {
   const list = document.querySelector("#tenantUpdatesList");
   if (!list) return;
+  if (currentUser().type === "tenant" && !tenant) {
+    list.innerHTML = `<div class="empty-state">No property assigned yet. Contact your agency.</div>`;
+    return;
+  }
   const updates = state.notifications
     .filter((notification) => notification.tenantId === tenant?.id)
     .slice(0, 4);
@@ -2757,6 +2789,133 @@ function renderTenantUpdates(tenant) {
       <em class="status-chip ${notification.priority === "urgent" ? "urgent" : ""}">${notification.status || "update"}</em>
     </article>
   `).join("");
+}
+
+function landlordPropertiesForCurrentUser() {
+  const user = currentUser();
+  if (user.type !== "landlord") return [];
+  const email = String(user.email || "").trim().toLowerCase();
+  const name = String(user.fullName || "").trim().toLowerCase();
+  return state.properties.filter((property) => {
+    const landlordEmail = String(property.landlordEmail || "").trim().toLowerCase();
+    const landlordName = String(property.landlord || "").trim().toLowerCase();
+    return Boolean((email && landlordEmail === email) || (name && landlordName === name));
+  });
+}
+
+function landlordScopedTenants(properties) {
+  const propertyAddresses = new Set(properties.map((property) => property.address));
+  return state.tenants.filter((tenant) => propertyAddresses.has(tenant.address));
+}
+
+function landlordScopedTickets(properties) {
+  const propertyAddresses = new Set(properties.map((property) => property.address));
+  return state.tickets.filter((ticket) => propertyAddresses.has(ticket.property));
+}
+
+function landlordScopedDocuments(properties) {
+  const propertyAddresses = new Set(properties.map((property) => property.address));
+  return state.documents.filter((documentItem) => propertyAddresses.has(documentItem.property));
+}
+
+function landlordScopedRentItems(properties) {
+  const tenantIds = new Set(landlordScopedTenants(properties).map((tenant) => tenant.id));
+  return state.rentItems.filter((item) => tenantIds.has(item.tenantId));
+}
+
+function setListOrEmpty(id, items, emptyMessage, rowMarkup) {
+  const list = document.querySelector(`#${id}`);
+  if (!list) return;
+  list.innerHTML = items.length ? items.map(rowMarkup).join("") : `<div class="empty-state">${emptyMessage}</div>`;
+}
+
+function renderLandlordPortal() {
+  const properties = landlordPropertiesForCurrentUser();
+  const repairs = landlordScopedTickets(properties);
+  const documents = landlordScopedDocuments(properties);
+  const rentItems = landlordScopedRentItems(properties);
+  const invoices = repairs.filter((ticket) => ticket.invoiceFile);
+  const contractors = repairs.filter((ticket) => ticket.contractor || ticket.contractorEmail);
+  const messages = state.notifications.filter((notification) => {
+    const tenant = state.tenants.find((item) => item.id === notification.tenantId);
+    return tenant && properties.some((property) => property.address === tenant.address);
+  });
+  const expectedRent = properties.reduce((sum, property) => sum + Number(property.monthlyRent || 0), 0);
+  const collectedRent = rentItems.filter((item) => item.status === "paid").reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const emptyState = document.querySelector("#landlordEmptyState");
+  if (emptyState) emptyState.hidden = properties.length > 0;
+  const summary = document.querySelector("#landlordSummaryGrid");
+  if (summary) {
+    summary.innerHTML = properties.length ? `
+      <div><span>Assigned properties</span><strong>${properties.length}</strong></div>
+      <div><span>Open repairs</span><strong>${repairs.filter((ticket) => !["Closed", "Cancelled", "Completed"].includes(ticket.status)).length}</strong></div>
+      <div><span>Expected rent</span><strong>${money(expectedRent)}</strong></div>
+      <div><span>Collected rent</span><strong>${money(collectedRent)}</strong></div>
+    ` : "";
+  }
+
+  setListOrEmpty("landlordPropertyList", properties, "No properties assigned yet.", (property) => {
+    const financials = propertyFinancials(property);
+    return `
+      <div class="tenant-row">
+        <div>
+          <strong>${escapeHtml(property.address)}</strong>
+          <small>${escapeHtml(property.postcode || "No postcode")} - ${escapeHtml(property.occupancy || "unknown")}</small>
+          <small>${escapeHtml(property.type || "Property")} - net ${money(financials.net)}</small>
+        </div>
+        <span class="status-chip ${property.occupancy === "occupied" ? "good" : "warning"}">${escapeHtml(property.occupancy || "unknown")}</span>
+      </div>
+    `;
+  });
+  setListOrEmpty("landlordRepairList", repairs, "No repairs assigned yet.", (ticket) => `
+    <div class="tenant-row">
+      <div><strong>${escapeHtml(ticket.title)}</strong><small>${escapeHtml(ticket.property)}</small><small>${escapeHtml(ticket.status)} - ${escapeHtml(ticket.contractor || "Unassigned")}</small></div>
+      <span class="status-chip ${statusClass(ticket)}">${escapeHtml(ticket.priority)}</span>
+    </div>
+  `);
+  setListOrEmpty("landlordDocumentList", documents, "No landlord property documents yet.", (documentItem) => {
+    const status = documentStatus(documentItem);
+    return `
+      <div class="tenant-row">
+        <div><strong>${escapeHtml(documentItem.type)}</strong><small>${escapeHtml(documentItem.property)}</small><small>${escapeHtml(documentItem.fileName || "Document")}</small></div>
+        <span class="status-chip ${status.className}">${status.label}</span>
+      </div>
+    `;
+  });
+  setListOrEmpty("landlordFinancialList", rentItems, "No financial records assigned yet.", (item) => {
+    const tenant = state.tenants.find((tenantItem) => tenantItem.id === item.tenantId);
+    return `
+      <div class="tenant-row">
+        <div><strong>${escapeHtml(tenant?.fullName || "Tenant")}</strong><small>${escapeHtml(tenant?.address || "")}</small><small>${money(item.amount)} due ${formatDate(item.dueDate)}</small></div>
+        <span class="status-chip ${rentStatusClass(item.status)}">${escapeHtml(item.status)}</span>
+      </div>
+    `;
+  });
+  setListOrEmpty("landlordInvoiceList", invoices, "No invoices assigned yet.", (ticket) => `
+    <div class="tenant-row">
+      <div><strong>${escapeHtml(ticket.invoiceFile)}</strong><small>${escapeHtml(ticket.title)} - ${escapeHtml(ticket.property)}</small><small>${money(ticket.actualCost || ticket.estimatedCost || 0)}</small></div>
+      <span class="status-chip">${escapeHtml(ticket.status)}</span>
+    </div>
+  `);
+  setListOrEmpty("landlordTradesList", contractors, "No contractor updates yet.", (ticket) => `
+    <div class="tenant-row">
+      <div><strong>${escapeHtml(ticket.contractor || "Contractor")}</strong><small>${escapeHtml(ticket.title)} - ${escapeHtml(ticket.property)}</small><small>${escapeHtml(ticket.status)}</small></div>
+      <span class="status-chip ${statusClass(ticket)}">${escapeHtml(ticket.priority)}</span>
+    </div>
+  `);
+  setListOrEmpty("landlordMessageList", messages, "No messages yet.", (notification) => `
+    <div class="tenant-row">
+      <div><strong>${escapeHtml(notification.subject)}</strong><small>${escapeHtml(notification.message)}</small><small>${escapeHtml(notification.createdAt || "Recently")}</small></div>
+      <span class="status-chip ${notification.priority === "urgent" ? "urgent" : ""}">${escapeHtml(notification.priority || "normal")}</span>
+    </div>
+  `);
+  setListOrEmpty("landlordSettingsList", [currentUser()], "No settings available yet.", (user) => `
+    <div class="tenant-row">
+      <div><strong>${escapeHtml(user.email || "Landlord account")}</strong><small>Role: landlord</small><small>Property relationships are managed by the agency.</small></div>
+      <span class="status-chip good">active</span>
+    </div>
+  `);
 }
 
 function openDocument(documentItem, tenantView = false) {
@@ -3466,7 +3625,7 @@ function updateTradesJob(status, message = "") {
 
 function tradesVisibleJobs() {
   const user = currentUser();
-  if (user.type !== "contractor") return [];
+  if (!["contractor", "tradesperson"].includes(user.type)) return [];
   return state.tickets.filter((ticket) => ticket.contractorEmail === user.email || ticket.openPool === true);
 }
 
