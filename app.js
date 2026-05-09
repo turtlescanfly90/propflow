@@ -466,7 +466,7 @@ const propFlowAuth = {
   user: null,
   profile: null,
 };
-const propFlowBuildId = "20260509-auth-role-shell-fix-v1";
+const propFlowBuildId = "20260509-issue1-login-crash-fix-v1";
 let selectedTicketId = state.tickets[0]?.id || "";
 let ticketFilter = "all";
 let repairRouteFilter = {};
@@ -2537,12 +2537,19 @@ function renderPropertyFinancialsTab({ financials }) {
 }
 
 function syncInlinePropertyFieldsToMainForm() {
-  document.querySelector("#propertyAddress").value = document.querySelector("#inlinePropertyAddress").value;
-  document.querySelector("#propertyPostcode").value = document.querySelector("#inlinePropertyPostcode").value;
-  document.querySelector("#propertyType").value = document.querySelector("#inlinePropertyType").value;
-  document.querySelector("#propertyOccupancy").value = document.querySelector("#inlinePropertyOccupancy").value;
-  document.querySelector("#propertyLandlord").value = document.querySelector("#inlinePropertyLandlord").value;
-  document.querySelector("#propertyMonthlyRent").value = document.querySelector("#inlinePropertyRent").value;
+  const fields = [
+    ["propertyAddress", "inlinePropertyAddress"],
+    ["propertyPostcode", "inlinePropertyPostcode"],
+    ["propertyType", "inlinePropertyType"],
+    ["propertyOccupancy", "inlinePropertyOccupancy"],
+    ["propertyLandlord", "inlinePropertyLandlord"],
+    ["propertyMonthlyRent", "inlinePropertyRent"],
+  ];
+  fields.forEach(([targetId, sourceId]) => {
+    const target = document.querySelector(`#${targetId}`);
+    const source = document.querySelector(`#${sourceId}`);
+    if (target && source) target.value = source.value;
+  });
 }
 
 async function saveInlinePropertyDetails(propertyId, { lookupCouncil = false } = {}) {
@@ -3080,11 +3087,11 @@ async function makeDocumentFromForm() {
 }
 
 function updateTenantPreview() {
-  const issue = document.querySelector("#issueType").value;
-  const urgency = document.querySelector("#urgency").value;
+  const issue = document.querySelector("#issueType")?.value || "Repair";
+  const urgency = document.querySelector("#urgency")?.value || "Routine";
   const property = authorisedTenant()?.address || "No active tenancy found";
-  document.querySelector("#tenantIssueTitle").textContent = issue;
-  document.querySelector("#tenantIssueMeta").textContent = `${urgency} - ${property.split(",").slice(0, 2).join(",")}`;
+  setText("tenantIssueTitle", issue);
+  setText("tenantIssueMeta", `${urgency} - ${property.split(",").slice(0, 2).join(",")}`);
 }
 
 async function makeTicketFromForm() {
