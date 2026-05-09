@@ -74,14 +74,9 @@ body[data-portal="tenant"] .sidebar {
   background: #ffffff;
 }
 
-body[data-user-type="agency"] .nav-item[data-panel="tenantPanel"],
-body[data-user-type="agency"] .nav-item[data-panel="tradesPanel"],
-body[data-user-type="agency"] .nav-item[data-panel="landlordPanel"],
-body[data-user-type="tenant"] .nav-item:not([data-panel="tenantPanel"]),
 body[data-user-type="tenant"] .sidebar-card,
-body[data-user-type="contractor"] .nav-item:not([data-panel="tradesPanel"]),
+body[data-user-type="tradesperson"] .sidebar-card,
 body[data-user-type="contractor"] .sidebar-card,
-body[data-user-type="landlord"] .nav-item:not([data-panel="landlordPanel"]),
 body[data-user-type="landlord"] .sidebar-card {
   display: none;
 }

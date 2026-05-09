@@ -442,7 +442,7 @@ function migrateKnownDemoAddressesToLondon(snapshot) {
   return next;
 }
 
-let state = migrateKnownDemoAddressesToLondon(loadState(storageKey, { seedDemo: true }));
+let state = emptyWorkspaceState();
 if (state.branding?.primary === "#14745f") state.branding.primary = "#2563eb";
 const postcodeLookupCache = new Proxy({}, {
   get: (target, key) => state.postcodeLookups?.[key],
@@ -466,7 +466,7 @@ const propFlowAuth = {
   user: null,
   profile: null,
 };
-const propFlowBuildId = "20260509-issue1-role-portals-v1";
+const propFlowBuildId = "20260509-auth-role-shell-fix-v1";
 let selectedTicketId = state.tickets[0]?.id || "";
 let ticketFilter = "all";
 let repairRouteFilter = {};
@@ -732,7 +732,16 @@ function stripSeedRecordsFromUserWorkspace(workspace) {
   const seed = demoWorkspaceState();
   const withoutSeedIds = (records, seedRecords) => {
     const seedIds = new Set(seedRecords.map((record) => record.id).filter(Boolean));
-    return records.filter((record) => !seedIds.has(record.id));
+    const seedEmails = new Set(seedRecords.map((record) => String(record.email || record.landlordEmail || "").toLowerCase()).filter(Boolean));
+    const seedNames = new Set(seedRecords.map((record) => String(record.fullName || record.landlord || record.contractor || "").toLowerCase()).filter(Boolean));
+    const seedAddresses = new Set(seedRecords.map((record) => String(record.address || record.property || "").toLowerCase()).filter(Boolean));
+    return records.filter((record) => {
+      const idMatch = seedIds.has(record.id);
+      const emailMatch = seedEmails.has(String(record.email || record.landlordEmail || "").toLowerCase());
+      const nameMatch = seedNames.has(String(record.fullName || record.landlord || record.contractor || "").toLowerCase());
+      const addressMatch = seedAddresses.has(String(record.address || record.property || "").toLowerCase());
+      return !(idMatch || emailMatch || nameMatch || addressMatch);
+    });
   };
   return {
     ...workspace,
