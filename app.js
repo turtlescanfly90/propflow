@@ -479,7 +479,7 @@ const propFlowAuth = {
   user: null,
   profile: null,
 };
-const propFlowBuildId = "20260509-issue5-doc-compliance-v1";
+const propFlowBuildId = "20260510-issue6-repair-ops-v1";
 let selectedTicketId = state.tickets[0]?.id || "";
 let ticketFilter = "all";
 let repairRouteFilter = {};
@@ -535,13 +535,13 @@ const navIconPaths = {
 const roleNavConfigs = {
   agency: [
     { label: "Dashboard", panel: "overviewPanel", route: "/agency/dashboard", icon: "dashboard" },
+    { label: "Repairs", panel: "ticketsPanel", route: "/agency/repairs", icon: "repair" },
     { label: "Properties", panel: "propertiesPanel", route: "/agency/properties", icon: "property" },
     { label: "Tenants", panel: "tenantsPanel", route: "/agency/tenants", icon: "users" },
-    { label: "Repairs", panel: "ticketsPanel", route: "/agency/repairs", icon: "repair" },
     { label: "Tradespeople", panel: "contractorsPanel", route: "/agency/tradespeople", icon: "trade" },
+    { label: "Documents", panel: "documentsPanel", route: "/agency/documents", icon: "document" },
     { label: "Finance", panel: "financePanel", route: "/agency/financials", icon: "money" },
     { label: "Notify", panel: "notificationsPanel", route: "/agency/notify", icon: "bell" },
-    { label: "Documents", panel: "documentsPanel", route: "/agency/documents", icon: "document" },
     { label: "Councils", panel: "councilsPanel", route: "/agency/councils", icon: "council" },
     { label: "Team", panel: "teamPanel", route: "/agency/team", icon: "team" },
     { label: "Settings", panel: "settingsPanel", route: "/agency/settings", icon: "settings" },
@@ -550,26 +550,23 @@ const roleNavConfigs = {
     { label: "Home", panel: "tenantPanel", route: "/tenant/home", anchor: "tenantHome", icon: "dashboard" },
     { label: "Report repair", panel: "tenantPanel", route: "/tenant/report-repair", anchor: "tenantReportRepair", icon: "repair" },
     { label: "My repairs", panel: "tenantPanel", route: "/tenant/repairs", anchor: "tenantRepairs", icon: "repair" },
-    { label: "Documents", panel: "tenantPanel", route: "/tenant/documents", anchor: "tenantDocuments", icon: "document" },
-    { label: "Rent", panel: "tenantPanel", route: "/tenant/rent", anchor: "tenantRent", icon: "money" },
     { label: "Messages", panel: "tenantPanel", route: "/tenant/messages", anchor: "tenantMessages", icon: "message" },
+    { label: "Documents", panel: "tenantPanel", route: "/tenant/documents", anchor: "tenantDocuments", icon: "document" },
     { label: "Settings", panel: "tenantPanel", route: "/tenant/settings", anchor: "tenantProfile", icon: "settings" },
   ],
   landlord: [
-    { label: "Dashboard", panel: "landlordPanel", route: "/landlord/dashboard", anchor: "landlordDashboard", icon: "dashboard" },
-    { label: "My properties", panel: "landlordPanel", route: "/landlord/properties", anchor: "landlordProperties", icon: "property" },
-    { label: "Repairs", panel: "landlordPanel", route: "/landlord/repairs", anchor: "landlordRepairs", icon: "repair" },
-    { label: "Documents", panel: "landlordPanel", route: "/landlord/documents", anchor: "landlordDocuments", icon: "document" },
-    { label: "Rent / financials", panel: "landlordPanel", route: "/landlord/financials", anchor: "landlordFinancials", icon: "money" },
+    { label: "Repairs awaiting approval", panel: "landlordPanel", route: "/landlord/approvals", anchor: "landlordRepairs", icon: "repair" },
+    { label: "Active repairs", panel: "landlordPanel", route: "/landlord/active-repairs", anchor: "landlordRepairs", icon: "repair" },
+    { label: "Completed works", panel: "landlordPanel", route: "/landlord/completed-works", anchor: "landlordRepairs", icon: "dashboard" },
     { label: "Invoices", panel: "landlordPanel", route: "/landlord/invoices", anchor: "landlordInvoices", icon: "invoice" },
-    { label: "Tradespeople", panel: "landlordPanel", route: "/landlord/tradespeople", anchor: "landlordTradespeople", icon: "trade" },
-    { label: "Messages", panel: "landlordPanel", route: "/landlord/messages", anchor: "landlordMessages", icon: "message" },
+    { label: "Documents", panel: "landlordPanel", route: "/landlord/documents", anchor: "landlordDocuments", icon: "document" },
     { label: "Settings", panel: "landlordPanel", route: "/landlord/settings", anchor: "landlordSettings", icon: "settings" },
   ],
   trades: [
-    { label: "Jobs", panel: "tradesPanel", route: "/trades/jobs", icon: "dashboard" },
-    { label: "Assigned repairs", panel: "tradesPanel", route: "/trades/assigned-repairs", icon: "repair" },
-    { label: "Schedule", panel: "tradesPanel", route: "/trades/schedule", icon: "schedule" },
+    { label: "New job requests", panel: "tradesPanel", route: "/trades/new-job-requests", icon: "dashboard" },
+    { label: "My quotes", panel: "tradesPanel", route: "/trades/my-quotes", icon: "document" },
+    { label: "Scheduled jobs", panel: "tradesPanel", route: "/trades/scheduled-jobs", icon: "schedule" },
+    { label: "Completed jobs", panel: "tradesPanel", route: "/trades/completed-jobs", icon: "repair" },
     { label: "Invoices", panel: "tradesPanel", route: "/trades/invoices", icon: "invoice" },
     { label: "Messages", panel: "tradesPanel", route: "/trades/messages", icon: "message" },
     { label: "Settings", panel: "tradesPanel", route: "/trades/settings", icon: "settings" },
@@ -722,7 +719,7 @@ function normaliseWorkspaceState(saved, fallback) {
     teamMembers: Array.isArray(saved.teamMembers) ? saved.teamMembers : fallback.teamMembers,
     rentItems: Array.isArray(saved.rentItems) ? saved.rentItems : fallback.rentItems,
     notifications: Array.isArray(saved.notifications) ? saved.notifications : fallback.notifications,
-    tickets: Array.isArray(saved.tickets) ? saved.tickets : fallback.tickets,
+    tickets: (Array.isArray(saved.tickets) ? saved.tickets : fallback.tickets).map(prepareRepairTicket),
     documents: Array.isArray(saved.documents) ? saved.documents : fallback.documents,
     postcodeLookups: saved.postcodeLookups || {},
     branding: saved.branding || fallback.branding,
@@ -743,6 +740,88 @@ function backfillDocumentPropertyIds(workspace) {
   };
 }
 
+function normaliseRepairStatus(status) {
+  const value = String(status || "").trim().toLowerCase();
+  const statusMap = {
+    new: "New",
+    reported: "New",
+    reviewed: "Under review",
+    "under review": "Under review",
+    "awaiting tenant availability": "Under review",
+    "quote requested": "Quote requested",
+    "quotes received": "Quotes received",
+    "awaiting landlord approval": "Awaiting landlord approval",
+    approved: "Approved",
+    scheduled: "Scheduled",
+    "appointment confirmed": "Scheduled",
+    "assigned to tradesperson": "Scheduled",
+    "in progress": "In progress",
+    completed: "Completed",
+    "tenant confirmed": "Tenant confirmed",
+    closed: "Closed",
+    cancelled: "Closed",
+  };
+  return statusMap[value] || (status ? String(status) : "New");
+}
+
+function prepareRepairTicket(ticket = {}) {
+  const quoteRequests = Array.isArray(ticket.quoteRequests) ? ticket.quoteRequests : [];
+  const quotes = Array.isArray(ticket.quotes) ? ticket.quotes : [];
+  const landlordApprovalStatus = ["not_required", "pending", "approved", "rejected"].includes(ticket.landlordApprovalStatus)
+    ? ticket.landlordApprovalStatus
+    : ticket.approvedByLandlord
+      ? "approved"
+      : ticket.approvalRequired
+        ? "pending"
+        : "not_required";
+  return {
+    ...ticket,
+    status: normaliseRepairStatus(ticket.status),
+    quoteRequests,
+    quotes,
+    selectedQuoteId: ticket.selectedQuoteId || "",
+    approvalRequired: Boolean(ticket.approvalRequired || landlordApprovalStatus === "pending" || String(ticket.approval || "").toLowerCase().includes("required")),
+    approvedByLandlord: Boolean(ticket.approvedByLandlord || landlordApprovalStatus === "approved"),
+    landlordApprovalStatus,
+  };
+}
+
+function isCompletedRepair(ticket = {}) {
+  return ["Completed", "Tenant confirmed", "Closed"].includes(normaliseRepairStatus(ticket.status));
+}
+
+function isOpenRepair(ticket = {}) {
+  return !isCompletedRepair(ticket);
+}
+
+function isUrgentRepair(ticket = {}) {
+  return isOpenRepair(ticket) && ["Emergency", "Urgent"].includes(String(ticket.priority || "").trim());
+}
+
+function isAwaitingQuote(ticket = {}) {
+  const prepared = prepareRepairTicket(ticket);
+  return normaliseRepairStatus(prepared.status) === "Quote requested" || (prepared.quoteRequests.length > 0 && prepared.quotes.length === 0);
+}
+
+function isAwaitingLandlordApproval(ticket = {}) {
+  const prepared = prepareRepairTicket(ticket);
+  return normaliseRepairStatus(prepared.status) === "Awaiting landlord approval" || prepared.landlordApprovalStatus === "pending";
+}
+
+function isScheduledJob(ticket = {}) {
+  return normaliseRepairStatus(ticket.status) === "Scheduled" || ticket.appointment?.status === "confirmed";
+}
+
+function isCompletedThisMonth(ticket = {}) {
+  if (!isCompletedRepair(ticket)) return false;
+  const completedAt = ticket.completedAt || ticket.closedAt || ticket.completion?.date || "";
+  if (!completedAt) return true;
+  const date = new Date(completedAt);
+  if (Number.isNaN(date.getTime())) return true;
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+}
+
 function loadState(key = activeStorageKey, options = {}) {
   const fallback = options.seedDemo ? demoWorkspaceState() : emptyWorkspaceState();
   try {
@@ -752,7 +831,7 @@ function loadState(key = activeStorageKey, options = {}) {
     console.warn("Could not load workspace state", error);
   }
 
-  return fallback;
+  return normaliseWorkspaceState(fallback, fallback);
 }
 
 function stripSeedRecordsFromUserWorkspace(workspace) {
@@ -1289,17 +1368,17 @@ function setPortalMode(mode) {
   setText("brandSub", portalLabel);
   setText(
     "modeEyebrow",
-    mode === "tenant" ? "Tenant self-service portal" : mode === "trades" ? "Tradesperson job workspace" : mode === "landlord" ? "Landlord owner workspace" : "Agency operations workspace",
+    mode === "tenant" ? "Tenant repair portal" : mode === "trades" ? "Tradesperson job workspace" : mode === "landlord" ? "Landlord repair approvals" : "Repair operations workspace",
   );
   setText(
     "modeTitle",
     mode === "tenant"
-      ? "Report repairs, view documents, and track what the agency is doing."
+      ? "Report issues and track repair progress for your home."
       : mode === "trades"
-        ? "View assigned jobs, confirm visits, update progress, and upload invoices."
+        ? "Manage job requests, quotes, schedules, and completion notes."
         : mode === "landlord"
-          ? "Owner reports and property relationships will appear here."
-          : "One workspace for tenants, repairs, paperwork, and compliance.",
+          ? "Review repair approvals, costs, invoices, and completed work."
+          : "Run tenant repairs, quotes, approvals, and contractor jobs from one workspace.",
   );
 }
 
@@ -1392,23 +1471,31 @@ function refreshRepairViews(ticketId = selectedTicketId) {
 function filteredTickets() {
   return state.tickets.filter((ticket) => {
     const filterMatches = ticketFilter === "all" || ticket.tag === ticketFilter;
+    const status = normaliseRepairStatus(ticket.status);
     const routeStatusMatches =
       !repairRouteFilter.status ||
-      (repairRouteFilter.status === "open" && !["Completed", "Closed", "Cancelled"].includes(ticket.status)) ||
-      ticket.status.toLowerCase().includes(repairRouteFilter.status.toLowerCase());
+      (repairRouteFilter.status === "open" && isOpenRepair(ticket)) ||
+      (repairRouteFilter.status === "Quote requested" && isAwaitingQuote(ticket)) ||
+      (repairRouteFilter.status === "Awaiting landlord approval" && isAwaitingLandlordApproval(ticket)) ||
+      (repairRouteFilter.status === "Scheduled" && isScheduledJob(ticket)) ||
+      (repairRouteFilter.status === "Completed" && isCompletedRepair(ticket)) ||
+      status.toLowerCase().includes(repairRouteFilter.status.toLowerCase());
     const routeUrgencyMatches =
       !repairRouteFilter.urgency ||
       ticket.tag === repairRouteFilter.urgency ||
-      ticket.priority.toLowerCase() === repairRouteFilter.urgency.toLowerCase();
-    const haystack = `${ticket.title} ${ticket.property} ${ticket.tenant} ${ticket.status} ${ticket.trade} ${ticket.contractor}`.toLowerCase();
+      String(ticket.priority || "").toLowerCase() === repairRouteFilter.urgency.toLowerCase();
+    const haystack = `${ticket.title} ${ticket.property} ${ticket.tenant} ${status} ${ticket.trade} ${ticket.contractor}`.toLowerCase();
     const searchMatches = !repairSearch || haystack.includes(repairSearch);
     return filterMatches && routeStatusMatches && routeUrgencyMatches && searchMatches;
   });
 }
 
 function statusClass(ticket) {
-  if (ticket.tag === "urgent") return "urgent";
-  if (ticket.tag === "approval") return "warning";
+  const status = normaliseRepairStatus(ticket.status);
+  if (ticket.tag === "urgent" || isUrgentRepair(ticket)) return "urgent";
+  if (isAwaitingLandlordApproval(ticket) || status.includes("Quote")) return "warning";
+  if (isScheduledJob(ticket)) return "planned";
+  if (isCompletedRepair(ticket)) return "good";
   return "";
 }
 
@@ -1496,7 +1583,7 @@ function renderDashboardModern() {
 
   const repairTable = document.querySelector("#dashboardRepairsTable");
   if (repairTable) {
-    const repairs = state.tickets.filter((ticket) => ticket.status !== "Completed" && ticket.status !== "Closed").slice(0, 6);
+    const repairs = state.tickets.filter(isOpenRepair).slice(0, 6);
     repairTable.innerHTML = repairs.length
       ? repairs.map((ticket) => `
           <button class="data-row" type="button" data-open-repair="${ticket.id}">
@@ -1517,7 +1604,7 @@ function renderDashboardModern() {
     propertyTable.innerHTML = state.properties.length
       ? state.properties.slice(0, 6).map((property) => {
           const financials = propertyFinancials(property);
-          const repairs = ticketsForProperty(property).filter((ticket) => ticket.status !== "Completed" && ticket.status !== "Closed").length;
+          const repairs = ticketsForProperty(property).filter(isOpenRepair).length;
           return `
             <button class="data-row" type="button" data-open-property="${property.id}">
               <span><strong>${property.address}</strong><small>${property.postcode || "No postcode"}</small></span>
@@ -1797,31 +1884,21 @@ function renderTicketAvailability(ticket) {
 }
 
 function updateMetrics() {
-  const openTickets = state.tickets.filter((ticket) => ticket.status !== "Completed");
-  const urgentTickets = state.tickets.filter((ticket) => ticket.tag === "urgent");
-  const assignedTickets = state.tickets.filter((ticket) => ticket.status === "Assigned");
-  const newTickets = state.tickets.filter((ticket) => ticket.status === "New");
-  const scheduledTickets = state.tickets.filter((ticket) => ticket.status === "Scheduled");
-  const completedTickets = state.tickets.filter((ticket) => ticket.status === "Completed");
-  const rentCollected = state.rentItems.filter((item) => item.status === "paid").reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const maintenanceSpend = state.tickets.reduce((sum, ticket) => sum + Number(ticket.actualCost || ticket.estimatedCost || 0), 0);
-  const netPosition = state.properties.reduce((sum, property) => sum + propertyFinancials(property).net, 0);
-  const expiringCertificates = expiringCertificateCount();
-  setText("dashboardTotalProperties", state.properties.length);
-  setText("openRepairs", openTickets.length);
-  setText("newCount", newTickets.length);
-  setText("assignedCount", assignedTickets.length);
-  setText("scheduledCount", scheduledTickets.length);
-  setText("completedCount", completedTickets.length || 0);
-  setText("dashboardRentCollected", kpiCurrencyDisplay(rentCollected));
-  setText("dashboardMaintenanceSpend", kpiCurrencyDisplay(maintenanceSpend));
-  setText("dashboardProfit", kpiCurrencyDisplay(netPosition));
-  setKpiTone("dashboardRentCollected", rentCollected);
-  setKpiTone("dashboardMaintenanceSpend", maintenanceSpend);
-  setKpiTone("dashboardProfit", netPosition);
-  setText("dashboardExpiringCertificates", expiringCertificates);
-  const openRepairMeta = document.querySelector("#openRepairs")?.nextElementSibling;
-  if (openRepairMeta) openRepairMeta.textContent = `${urgentTickets.length} urgent, ${assignedTickets.length} assigned to contractor`;
+  state.tickets = state.tickets.map(prepareRepairTicket);
+  const newReports = state.tickets.filter((ticket) => normaliseRepairStatus(ticket.status) === "New").length;
+  const urgentTickets = state.tickets.filter(isUrgentRepair).length;
+  const awaitingQuotes = state.tickets.filter(isAwaitingQuote).length;
+  const awaitingApproval = state.tickets.filter(isAwaitingLandlordApproval).length;
+  const scheduledJobs = state.tickets.filter(isScheduledJob).length;
+  const completedThisMonth = state.tickets.filter(isCompletedThisMonth).length;
+  setText("dashboardNewReports", newReports);
+  setText("dashboardUrgentRepairs", urgentTickets);
+  setText("dashboardAwaitingQuotes", awaitingQuotes);
+  setText("dashboardAwaitingApproval", awaitingApproval);
+  setText("dashboardScheduledJobs", scheduledJobs);
+  setText("dashboardCompletedThisMonth", completedThisMonth);
+  const urgentMeta = document.querySelector("#dashboardUrgentRepairs")?.nextElementSibling;
+  if (urgentMeta) urgentMeta.textContent = "emergency or urgent, not completed";
   updateDocumentMetrics();
   renderAgencyEmptyState();
   renderDashboardModern();
@@ -2282,7 +2359,7 @@ function renderProperties() {
     propertyList.innerHTML = `<div class="empty-state">No properties match this search.</div>`;
   } else {
     properties.forEach((property) => {
-      const tickets = ticketsForProperty(property).filter((ticket) => ticket.status !== "Completed");
+      const tickets = ticketsForProperty(property).filter(isOpenRepair);
       const financials = propertyFinancials(property);
       const displayAddress = splitAddressForDisplay(property);
       const row = document.createElement("div");
@@ -3288,14 +3365,14 @@ async function makeTicketFromForm() {
   const evidence = media.map((item) => (typeof item === "object" ? item.name : item));
   const tenant = activeTenantOrWarn();
   if (!tenant) return null;
-  return {
+  return prepareRepairTicket({
     id: `RF-${Math.floor(1100 + Math.random() * 8000)}`,
     title,
     property: tenant?.address || "",
     tenant: tenant?.fullName || document.querySelector("#tenantName").value.trim() || "Tenant",
     tenantId: tenant?.id || "",
     priority,
-    status: "Reported",
+    status: "New",
     trade: rule.trade,
     approval: rule.approval,
     sla: priority === "Routine" ? "3 working days" : rule.sla,
@@ -3317,7 +3394,7 @@ async function makeTicketFromForm() {
     tradesNotes: "",
     completion: { tenantConfirmed: false, comment: "" },
     createdAt: new Date().toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }),
-  };
+  });
 }
 
 function addAgencyNotification({ tenantId, subject, message, priority = "normal", channel = "in_app", status = "new", relatedTicketId = "" }) {
@@ -3797,7 +3874,7 @@ function saveNotification() {
 function saveCoordination() {
   const ticket = selectedTicket();
   if (!ticket) return;
-  ticket.status = document.querySelector("#jobStatusSelect").value;
+  ticket.status = normaliseRepairStatus(document.querySelector("#jobStatusSelect").value);
   ticket.estimatedCost = Number(document.querySelector("#estimatedCost").value || 0);
   ticket.actualCost = Number(document.querySelector("#actualCost").value || 0);
   const proposal = document.querySelector("#appointmentProposal").value.trim();
@@ -3805,9 +3882,10 @@ function saveCoordination() {
     ticket.appointment = ticket.appointment || {};
     ticket.appointment.proposedBy = "agency";
     ticket.appointment.proposedStart = proposal;
-    ticket.appointment.status = ticket.status === "Appointment confirmed" ? "confirmed" : "proposed";
-    if (ticket.status === "Appointment confirmed") ticket.appointment.confirmedStart = proposal;
+    ticket.appointment.status = ticket.status === "Scheduled" ? "confirmed" : "proposed";
+    if (ticket.status === "Scheduled") ticket.appointment.confirmedStart = proposal;
   }
+  Object.assign(ticket, prepareRepairTicket(ticket));
   const invoice = document.querySelector("#invoiceUpload").files[0];
   if (invoice) ticket.invoiceFile = invoice.name;
   saveState();
@@ -4588,7 +4666,7 @@ const propertyDataHeaders = [
 function propertyDataRows() {
   return filteredProperties().map((property) => {
     const tenants = tenantsForProperty(property);
-    const openRepairs = ticketsForProperty(property).filter((ticket) => ticket.status !== "Completed").length;
+    const openRepairs = ticketsForProperty(property).filter(isOpenRepair).length;
     const missing = missingRequiredDocuments(property).join("; ");
     const financials = propertyFinancials(property);
     return [
@@ -4855,8 +4933,13 @@ navItems.forEach((item) => item.addEventListener("click", () => showPanel(item.d
 document.querySelectorAll("[data-panel-target]").forEach((shortcut) => {
   shortcut.addEventListener("click", () => {
     const route = shortcut.dataset.routeFilter;
+    if (route === "repairs-new") return routeToPanel("ticketsPanel", { status: "New" });
     if (route === "repairs-open") return routeToPanel("ticketsPanel", { status: "open" });
     if (route === "repairs-urgent") return routeToPanel("ticketsPanel", { urgency: "urgent" });
+    if (route === "repairs-quotes") return routeToPanel("ticketsPanel", { status: "Quote requested" });
+    if (route === "repairs-approval") return routeToPanel("ticketsPanel", { status: "Awaiting landlord approval" });
+    if (route === "repairs-scheduled") return routeToPanel("ticketsPanel", { status: "Scheduled" });
+    if (route === "repairs-completed") return routeToPanel("ticketsPanel", { status: "Completed" });
     if (route === "documents-expiring") return routeToPanel("documentsPanel", { filter: "expiring" });
     if (route === "rent-arrears") return routeToPanel("financePanel", { filter: "arrears" });
     if (route === "maintenance-spend") return routeToPanel("financePanel", { type: "maintenance" });
@@ -5273,7 +5356,7 @@ document.querySelector("#resetDataBtn").addEventListener("click", () => {
 
 document.querySelector("#refreshOverview").addEventListener("click", () => {
   updateMetrics();
-  showToast("Overview refreshed with latest repairs and compliance tasks.");
+  showToast("Overview refreshed with latest repair operations.");
 });
 
 document.querySelector("#agencyStartPropertyBtn")?.addEventListener("click", () => {

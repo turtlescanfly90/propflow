@@ -146,8 +146,8 @@
       <main class="main">
         <header class="topbar">
           <div>
-            <p class="eyebrow" id="modeEyebrow">White-label property operations</p>
-            <h1 id="modeTitle">One workspace for tenants, repairs, paperwork, and compliance.</h1>
+            <p class="eyebrow" id="modeEyebrow">Repair operations workspace</p>
+            <h1 id="modeTitle">Run tenant repairs, quotes, approvals, and contractor jobs from one workspace.</h1>
           </div>
           <div class="header-actions">
             <label class="search-box" aria-label="Search">
@@ -175,59 +175,59 @@
         <section class="panel-section active" id="overviewPanel">
           <div class="dashboard-page-header">
             <div>
-              <p class="eyebrow">Agency dashboard</p>
-              <h2>Portfolio command centre</h2>
-              <p>Scan repairs, rent, compliance, and occupancy in one place.</p>
+              <p class="eyebrow">Repair operations</p>
+              <h2>Maintenance command centre</h2>
+              <p>Track tenant reports, quotes, approvals, contractor jobs, and completions.</p>
             </div>
           </div>
           <div class="metrics-grid dashboard-kpis">
-            <article class="metric-card metric-link" data-panel-target="propertiesPanel" data-route-filter="properties" tabindex="0" role="button" aria-label="Open properties">
+            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-new" tabindex="0" role="button" aria-label="Open new repair reports">
               <div class="metric-card-top">
-                <span class="metric-title">Total properties</span>
-                <span class="stat-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4 6 4v14M9 21v-7h6v7M9 10h.01M13 10h.01" /></svg></span>
+                <span class="metric-title">New reports</span>
+                <span class="stat-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5V4Zm4 5h6M9 13h6M9 17h3" /></svg></span>
               </div>
-              <strong id="dashboardTotalProperties">0</strong>
-              <small>managed by the agency</small>
+              <strong id="dashboardNewReports">0</strong>
+              <small>tenant issues waiting for review</small>
             </article>
-            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-open" tabindex="0" role="button" aria-label="Open repairs dashboard">
+            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-urgent" tabindex="0" role="button" aria-label="Open urgent repairs">
               <div class="metric-card-top">
-                <span class="metric-title">Open repairs</span>
+                <span class="metric-title">Urgent repairs</span>
                 <span class="stat-icon red" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1a5 5 0 0 1-6.6 6.6L6.5 20.5a2.1 2.1 0 0 1-3-3l7.7-7.7a5 5 0 0 1 6.6-6.6l-3.1 3.1Z" /></svg></span>
               </div>
-              <strong id="openRepairs">0</strong>
-              <small>0 urgent, 0 assigned to contractor</small>
+              <strong id="dashboardUrgentRepairs">0</strong>
+              <small>emergency or urgent, not completed</small>
             </article>
-            <article class="metric-card metric-link" data-panel-target="financePanel" data-route-filter="rent-collected" tabindex="0" role="button" aria-label="Open rent collected">
+            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-quotes" tabindex="0" role="button" aria-label="Open repairs awaiting quotes">
               <div class="metric-card-top">
-                <span class="metric-title">Rent collected</span>
-                <span class="stat-icon green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 1 0 0 7H14a3.5 3.5 0 1 1 0 7H6" /></svg></span>
+                <span class="metric-title">Awaiting quotes</span>
+                <span class="stat-icon orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h10v18H7V3Zm3 4h4M10 11h4M10 15h2" /></svg></span>
               </div>
-              <strong id="dashboardRentCollected">&pound;0</strong>
-              <small>this month</small>
+              <strong id="dashboardAwaitingQuotes">0</strong>
+              <small>quotes requested or missing</small>
             </article>
-            <article class="metric-card metric-link" data-panel-target="financePanel" data-route-filter="maintenance-spend" tabindex="0" role="button" aria-label="Open maintenance spend">
+            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-approval" tabindex="0" role="button" aria-label="Open repairs awaiting landlord approval">
               <div class="metric-card-top">
-                <span class="metric-title">Maintenance spend</span>
-                <span class="stat-icon orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h16M7 20V8l5-4 5 4v12M9 20v-7h6v7M9 9h6" /></svg></span>
+                <span class="metric-title">Awaiting approval</span>
+                <span class="stat-icon amber" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 3 7v6c0 5 4 8 9 8s9-3 9-8V7l-9-4Zm-3 9 2 2 4-5" /></svg></span>
               </div>
-              <strong id="dashboardMaintenanceSpend">&pound;0</strong>
-              <small>estimated this month</small>
+              <strong id="dashboardAwaitingApproval">0</strong>
+              <small>landlord decision needed</small>
             </article>
-            <article class="metric-card metric-link" data-panel-target="financePanel" data-route-filter="profit" tabindex="0" role="button" aria-label="Open profit and net position">
+            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-scheduled" tabindex="0" role="button" aria-label="Open scheduled repair jobs">
               <div class="metric-card-top">
-                <span class="metric-title">Profit</span>
-                <span class="stat-icon neutral profit-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h18v12H3V7ZM7 7V5h10v2M8 13h8M8 16h5" /></svg></span>
+                <span class="metric-title">Scheduled jobs</span>
+                <span class="stat-icon green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 2v4M17 2v4M4 8h16M5 5h14v16H5V5Zm4 8 2 2 4-5" /></svg></span>
               </div>
-              <strong id="dashboardProfit">&pound;0</strong>
-              <small>rent minus costs and fees</small>
+              <strong id="dashboardScheduledJobs">0</strong>
+              <small>confirmed visits and planned work</small>
             </article>
-            <article class="metric-card metric-link" data-panel-target="documentsPanel" data-route-filter="documents-expiring" tabindex="0" role="button" aria-label="Open expiring certificates">
+            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-completed" tabindex="0" role="button" aria-label="Open completed repair jobs">
               <div class="metric-card-top">
-                <span class="metric-title">Expiring certificates</span>
-                <span class="stat-icon orange" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6ZM14 2v6h6M12 12v4M12 19h.01" /></svg></span>
+                <span class="metric-title">Completed this month</span>
+                <span class="stat-icon green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6M4 20h16" /></svg></span>
               </div>
-              <strong id="dashboardExpiringCertificates">0</strong>
-              <small>expired or due within 30 days</small>
+              <strong id="dashboardCompletedThisMonth">0</strong>
+              <small>completed, confirmed, or closed</small>
             </article>
           </div>
 
@@ -241,7 +241,7 @@
           </section>
 
           <div class="dashboard-section-title">
-            <h2>Financial overview</h2>
+            <h2>Repair operations overview</h2>
           </div>
           <div class="dashboard-grid dashboard-chart-grid">
             <section class="panel chart-card chart-link" id="rentChartCard" tabindex="0" role="button" aria-label="Open financials">
@@ -557,8 +557,8 @@
             <section class="tenant-home-hero" id="tenantHome">
               <div>
                 <p class="eyebrow">Tenant portal</p>
-                <h2>Home essentials, kept simple.</h2>
-                <p>Report repairs, check documents, rent, and updates for your assigned property only.</p>
+                <h2>Report issues and track repair progress for your home.</h2>
+                <p>Use this space for your assigned property, active repairs, documents, and agency messages.</p>
               </div>
             </section>
 
@@ -1086,17 +1086,17 @@
                   <label>
                     Job status
                     <select id="jobStatusSelect">
-                      <option>Reported</option>
-                      <option>Reviewed</option>
-                      <option>Awaiting tenant availability</option>
-                      <option>Assigned to tradesperson</option>
-                      <option>Appointment proposed</option>
-                      <option>Appointment confirmed</option>
+                      <option>New</option>
+                      <option>Under review</option>
+                      <option>Quote requested</option>
+                      <option>Quotes received</option>
+                      <option>Awaiting landlord approval</option>
+                      <option>Approved</option>
+                      <option>Scheduled</option>
                       <option>In progress</option>
                       <option>Completed</option>
-                      <option>Tenant confirmation pending</option>
+                      <option>Tenant confirmed</option>
                       <option>Closed</option>
-                      <option>Cancelled</option>
                     </select>
                   </label>
                   <label>
@@ -1147,8 +1147,8 @@
           <div class="portal-hero trades-portal-hero">
             <div>
               <p class="eyebrow">Tradesperson portal</p>
-              <h2>Today’s assigned jobs, visit times, photos, and updates.</h2>
-              <p>Built for quick use on site: accept work, propose appointments, update progress, and upload invoices.</p>
+              <h2>Manage job requests, quotes, schedules, and completion notes.</h2>
+              <p>Built for quick use on site: accept work, share quotes, confirm visits, and upload invoices.</p>
             </div>
           </div>
           <div class="metrics-grid">
@@ -1230,8 +1230,8 @@
           <div class="portal-hero landlord-portal-hero">
             <div>
               <p class="eyebrow">Landlord portal</p>
-              <h2>Your owner workspace.</h2>
-              <p>View assigned properties, documents, repairs, rent summaries, and settings once an agency connects your records.</p>
+              <h2>Review repair approvals, costs, invoices, and completed work.</h2>
+              <p>See repair decisions and completed maintenance for properties linked to your account.</p>
             </div>
           </div>
           <section class="panel">
