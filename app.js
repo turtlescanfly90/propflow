@@ -1555,73 +1555,123 @@ function renderTimeline(containerId, items) {
 }
 
 function dashboardActivityItems() {
-  const repairs = state.tickets.slice(0, 3).map((ticket) => ({
-    type: "repair",
-    label: ticket.status === "Completed" ? "Repair completed" : "Tenant reported repair",
-    meta: `${ticket.property} - ${ticket.tenant}`,
-    time: ticket.createdAt || "Recently",
+  return state.tickets.slice(0, 8).map((ticket) => {
+    const status = normaliseRepairStatus(ticket.status);
+    const label =
+      status === "New" ? "Tenant reported repair" :
+      status === "Quote requested" ? "Quote requested" :
+      status === "Quotes received" ? "Quote received" :
+      status === "Awaiting landlord approval" ? "Landlord approval needed" :
+      status === "Scheduled" ? "Job scheduled" :
+      isCompletedRepair(ticket) ? "Repair completed" :
+      "Repair updated";
+    return {
+      type: "repair",
+      label,
+      meta: `${ticket.title || "Repair"} - ${ticket.property || "No property"} - ${ticket.tenant || "Tenant"}`,
+      time: ticket.createdAt || ticket.closedAt || ticket.completedAt || "Recently",
+    };
+  });
+}
+
+function repairNeedsScheduling(ticket = {}) {
+  const prepared = prepareRepairTicket(ticket);
+  const status = normaliseRepairStatus(prepared.status);
+  return isOpenRepair(prepared) && !isScheduledJob(prepared) && (status === "Approved" || prepared.approvedByLandlord || prepared.landlordApprovalStatus === "approved");
+}
+
+function repairNextAction(ticket = {}) {
+  const prepared = prepareRepairTicket(ticket);
+  const status = normaliseRepairStatus(prepared.status);
+  if (status === "New") return "Review report";
+  if (isUrgentRepair(prepared)) return "Triage urgently";
+  if (isAwaitingQuote(prepared)) return "Request or chase quote";
+  if (isAwaitingLandlordApproval(prepared)) return "Chase landlord approval";
+  if (repairNeedsScheduling(prepared)) return "Schedule contractor visit";
+  if (status === "Scheduled") return "Monitor visit";
+  if (status === "In progress") return "Check progress";
+  if (isCompletedRepair(prepared)) return "Archive or confirm";
+  return "Open repair";
+}
+
+function jobsNeedingAction() {
+  return state.tickets
+    .map(prepareRepairTicket)
+    .filter((ticket) => {
+      const status = normaliseRepairStatus(ticket.status);
+      return status === "New" || isUrgentRepair(ticket) || isAwaitingQuote(ticket) || isAwaitingLandlordApproval(ticket) || repairNeedsScheduling(ticket);
+    })
+    .slice(0, 8);
+}
+
+function repairPipelineCounts() {
+  const groups = [
+    ["New", (ticket) => normaliseRepairStatus(ticket.status) === "New"],
+    ["Under review", (ticket) => normaliseRepairStatus(ticket.status) === "Under review"],
+    ["Quote requested", isAwaitingQuote],
+    ["Awaiting approval", isAwaitingLandlordApproval],
+    ["Scheduled", isScheduledJob],
+    ["In progress", (ticket) => normaliseRepairStatus(ticket.status) === "In progress"],
+    ["Completed", isCompletedRepair],
+  ];
+  return groups.map(([label, predicate]) => ({
+    label,
+    count: state.tickets.filter((ticket) => predicate(prepareRepairTicket(ticket))).length,
   }));
-  const docs = state.documents.slice(0, 2).map((documentItem) => ({
-    type: "document",
-    label: `${documentItem.type} uploaded`,
-    meta: documentItem.property,
-    time: documentItem.uploadedAt || "Recently",
-  }));
-  const properties = state.properties.slice(0, 1).map((property) => ({
-    type: "property",
-    label: "Property record updated",
-    meta: `${property.occupancy} - ${property.landlord}`,
-    time: "Portfolio",
-  }));
-  return [...repairs, ...docs, ...properties].slice(0, 6);
 }
 
 function renderDashboardModern() {
   renderTimeline("dashboardTimeline", dashboardActivityItems());
-  renderDashboardCharts();
-  renderDashboardReminders();
+  renderDashboardActions();
+  renderRepairPipeline();
 
-  const repairTable = document.querySelector("#dashboardRepairsTable");
-  if (repairTable) {
-    const repairs = state.tickets.filter(isOpenRepair).slice(0, 6);
-    repairTable.innerHTML = repairs.length
-      ? repairs.map((ticket) => `
-          <button class="data-row" type="button" data-open-repair="${ticket.id}">
-            <span><strong>${ticket.title}</strong><small>${ticket.property}</small></span>
-            <span>${ticket.tenant}</span>
-            <span><em class="status-chip ${statusClass(ticket)}">${ticket.priority}</em></span>
-            <span class="row-action-arrow">Open -></span>
+  const nextStepsTable = document.querySelector("#dashboardNextStepsTable");
+  if (nextStepsTable) renderActionRows(nextStepsTable, jobsNeedingAction().slice(0, 4));
+}
+
+function renderActionRows(container, tickets) {
+  container.innerHTML = tickets.length
+    ? tickets.map((ticket) => {
+        const status = normaliseRepairStatus(ticket.status);
+        return `
+          <button class="data-row repair-action-row" type="button" data-open-repair="${ticket.id}">
+            <span><strong>${escapeHtml(ticket.title || "Repair")}</strong><small>${escapeHtml(ticket.property || "No property")}</small></span>
+            <span>${escapeHtml(ticket.tenant || "Tenant")}</span>
+            <span><em class="status-chip ${statusClass(ticket)}">${escapeHtml(ticket.priority || "Routine")}</em></span>
+            <span><small>${escapeHtml(status)}</small><strong>${escapeHtml(repairNextAction(ticket))}</strong></span>
           </button>
-        `).join("")
-      : `<div class="empty-state">No repairs.</div>`;
-    repairTable.querySelectorAll("[data-open-repair]").forEach((button) => {
-      button.addEventListener("click", () => openRepairFromAgencyTrades(button.dataset.openRepair));
-    });
-  }
+        `;
+      }).join("")
+    : `<div class="empty-state">No repair actions need attention.</div>`;
+  container.querySelectorAll("[data-open-repair]").forEach((button) => {
+    button.addEventListener("click", () => openRepairFromAgencyTrades(button.dataset.openRepair));
+  });
+}
 
-  const propertyTable = document.querySelector("#dashboardPropertiesTable");
-  if (propertyTable) {
-    propertyTable.innerHTML = state.properties.length
-      ? state.properties.slice(0, 6).map((property) => {
-          const financials = propertyFinancials(property);
-          const repairs = ticketsForProperty(property).filter(isOpenRepair).length;
-          return `
-            <button class="data-row" type="button" data-open-property="${property.id}">
-              <span><strong>${property.address}</strong><small>${property.postcode || "No postcode"}</small></span>
-              <span>${property.occupancy}</span>
-              <span>${money(financials.expected)}</span>
-              <span class="row-action-arrow">${repairs} repairs -></span>
-            </button>
-          `;
-        }).join("")
-      : `<div class="empty-state">No properties.</div>`;
-    propertyTable.querySelectorAll("[data-open-property]").forEach((button) => {
-      button.addEventListener("click", () => {
-        selectProperty(button.dataset.openProperty);
-        showPanel("propertiesPanel");
-      });
+function renderDashboardActions() {
+  const actionTable = document.querySelector("#dashboardActionTable");
+  if (!actionTable) return;
+  renderActionRows(actionTable, jobsNeedingAction());
+}
+
+function renderRepairPipeline() {
+  const container = document.querySelector("#dashboardRepairPipeline");
+  if (!container) return;
+  const groups = repairPipelineCounts();
+  container.innerHTML = groups.map((group) => `
+    <button class="repair-pipeline-card" type="button" data-pipeline-status="${escapeHtml(group.label)}">
+      <span>${escapeHtml(group.label)}</span>
+      <strong>${group.count}</strong>
+      <small>${group.count === 1 ? "job" : "jobs"}</small>
+    </button>
+  `).join("");
+  container.querySelectorAll("[data-pipeline-status]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const status = button.dataset.pipelineStatus;
+      const routeStatus = status === "Awaiting approval" ? "Awaiting landlord approval" : status;
+      routeToPanel("ticketsPanel", { status: routeStatus });
     });
-  }
+  });
 }
 
 function renderDashboardCharts() {
@@ -5360,7 +5410,7 @@ document.querySelector("#refreshOverview").addEventListener("click", () => {
 });
 
 document.querySelector("#agencyStartPropertyBtn")?.addEventListener("click", () => {
-  routeToPanel("propertiesPanel");
+  routeToPanel("ticketsPanel");
 });
 
 [

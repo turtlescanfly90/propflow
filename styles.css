@@ -1010,6 +1010,81 @@ button:disabled,
   align-items: stretch;
 }
 
+.dashboard-repair-focus-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr);
+  align-items: stretch;
+  margin-bottom: 28px;
+}
+
+.dashboard-action-panel,
+.dashboard-pipeline-panel {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.06), transparent 32%),
+    #fff;
+}
+
+.compact-action {
+  width: auto;
+  min-height: 40px;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.repair-action-table {
+  gap: 10px;
+}
+
+.repair-action-row {
+  grid-template-columns: minmax(0, 1.25fr) 0.8fr 0.55fr minmax(160px, 0.9fr);
+}
+
+.repair-action-row > span:last-child strong {
+  color: var(--ink);
+}
+
+.repair-pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.repair-pipeline-card {
+  display: grid;
+  gap: 6px;
+  min-height: 118px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px;
+  background: #f8fafc;
+  color: var(--ink);
+  text-align: left;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.repair-pipeline-card:hover,
+.repair-pipeline-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+}
+
+.repair-pipeline-card span,
+.repair-pipeline-card small {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.repair-pipeline-card strong {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.repair-activity-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.75fr);
+}
+
 .agency-empty-start {
   display: flex;
   align-items: center;
@@ -3221,6 +3296,8 @@ input[readonly] {
 
   .dashboard-grid,
   .dashboard-chart-grid,
+  .dashboard-repair-focus-grid,
+  .repair-activity-grid,
   .two-column,
   .repair-layout,
   .documents-grid {
@@ -3358,6 +3435,7 @@ input[readonly] {
     .tenant-property-facts,
     .tenant-profile-grid,
     .property-summary-strip,
+    .repair-pipeline-grid,
     .bar-chart {
     grid-template-columns: 1fr;
   }

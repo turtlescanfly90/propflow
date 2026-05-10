@@ -233,58 +233,48 @@
 
           <section class="panel agency-empty-start" id="agencyEmptyState" hidden>
             <div>
-              <p class="eyebrow">New agency workspace</p>
-              <h2>Your dashboard is ready.</h2>
-              <p>No demo tenants or properties have been loaded into this account. Add your first real property to start building the agency workspace.</p>
+              <p class="eyebrow">Repair operations ready</p>
+              <h2>No repair tickets yet.</h2>
+              <p>New tenant reports, quote requests, landlord approvals, and scheduled jobs will appear here once repairs are created.</p>
             </div>
-            <button class="primary-button" type="button" id="agencyStartPropertyBtn">Add first property</button>
+            <button class="primary-button" type="button" id="agencyStartPropertyBtn">Open repairs</button>
           </section>
 
           <div class="dashboard-section-title">
-            <h2>Repair operations overview</h2>
+            <h2>Jobs needing action</h2>
           </div>
-          <div class="dashboard-grid dashboard-chart-grid">
-            <section class="panel chart-card chart-link" id="rentChartCard" tabindex="0" role="button" aria-label="Open financials">
+          <div class="dashboard-grid dashboard-repair-focus-grid">
+            <section class="panel dashboard-action-panel">
               <div class="section-heading">
                 <div>
-                  <h2>Rent collected</h2>
-                  <p>Monthly snapshot.</p>
+                  <h2>Action queue</h2>
+                  <p>New reports, urgent work, quotes, approvals, and unscheduled jobs.</p>
                 </div>
+                <button class="secondary-button compact-action" type="button" data-panel-target="ticketsPanel">Open repairs</button>
               </div>
-              <div class="bar-chart" id="rentBarChart"></div>
+              <div class="data-table repair-action-table" id="dashboardActionTable"></div>
             </section>
-            <section class="panel chart-card chart-link" id="repairsChartCard" tabindex="0" role="button" aria-label="Open repairs">
+
+            <section class="panel dashboard-pipeline-panel">
               <div class="section-heading">
                 <div>
-                  <h2>Repairs</h2>
-                  <p>Workload breakdown.</p>
+                  <h2>Repair pipeline</h2>
+                  <p>Where every job sits in the workflow.</p>
                 </div>
               </div>
-              <div class="donut-wrap">
-                <div class="donut-chart" id="repairsDonutChart"></div>
-                <div class="chart-legend" id="repairsChartLegend"></div>
-              </div>
-            </section>
-            <section class="panel chart-card chart-link" id="occupancyChartCard" tabindex="0" role="button" aria-label="Open properties">
-              <div class="section-heading">
-                <div>
-                  <h2>Occupancy</h2>
-                  <p>Occupied versus vacant.</p>
-                </div>
-              </div>
-              <div class="occupancy-bars" id="occupancyChart"></div>
+              <div class="repair-pipeline-grid" id="dashboardRepairPipeline"></div>
             </section>
           </div>
 
           <div class="dashboard-section-title">
-            <h2>Repairs and reminders</h2>
+            <h2>Recent repair activity</h2>
           </div>
-          <div class="dashboard-grid dashboard-modern-grid">
+          <div class="dashboard-grid dashboard-modern-grid repair-activity-grid">
             <section class="panel dashboard-timeline-panel">
               <div class="section-heading">
                 <div>
                   <h2>Recent activity</h2>
-                  <p>Latest tenant and agency actions.</p>
+                  <p>Latest repair reports, quotes, approvals, schedules, and completions.</p>
                 </div>
                 <button class="icon-button" type="button" id="refreshOverview" aria-label="Refresh overview">
                   <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v6h6" /></svg>
@@ -296,39 +286,11 @@
             <section class="panel">
               <div class="section-heading">
                 <div>
-                  <h2>Agency reminders</h2>
-                  <p>Items needing attention.</p>
+                  <h2>Next operational steps</h2>
+                  <p>Quick view of the work that keeps repairs moving.</p>
                 </div>
               </div>
-              <div class="data-table" id="dashboardRemindersTable"></div>
-              <div class="pipeline sr-only" aria-hidden="true">
-                <div><strong id="newCount">0</strong><span>New</span></div>
-                <div><strong id="assignedCount">0</strong><span>Assigned</span></div>
-                <div><strong id="scheduledCount">0</strong><span>Scheduled</span></div>
-                <div><strong id="completedCount">0</strong><span>Completed</span></div>
-              </div>
-            </section>
-          </div>
-
-          <div class="dashboard-grid dashboard-table-grid">
-            <section class="panel">
-              <div class="section-heading">
-                <div>
-                  <h2>Recent repair requests</h2>
-                  <p>Open operational work.</p>
-                </div>
-              </div>
-              <div class="data-table" id="dashboardRepairsTable"></div>
-            </section>
-
-            <section class="panel">
-              <div class="section-heading">
-                <div>
-                  <h2>Property snapshot</h2>
-                  <p>Occupancy and rent overview.</p>
-                </div>
-              </div>
-              <div class="data-table" id="dashboardPropertiesTable"></div>
+              <div class="data-table" id="dashboardNextStepsTable"></div>
             </section>
           </div>
         </section>
