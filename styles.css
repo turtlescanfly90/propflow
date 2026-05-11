@@ -746,17 +746,17 @@ button:disabled,
 
 .dashboard-kpis {
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 34px;
+  gap: 18px;
 }
 
 .dashboard-kpis .metric-card {
   position: relative;
   justify-items: start;
   align-content: start;
-  min-height: 190px;
+  min-height: 152px;
   border: 0;
   border-radius: 18px;
-  padding: 28px;
+  padding: 22px;
   background: #fff;
   text-align: left;
   box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
@@ -807,22 +807,22 @@ button:disabled,
   justify-content: space-between;
   gap: 14px;
   width: 100%;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .dashboard-kpis .metric-card .stat-icon {
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
   margin: 0;
   border-radius: 999px;
 }
 
 .dashboard-kpis .metric-card .stat-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   fill: currentColor;
 }
 
@@ -880,9 +880,9 @@ button:disabled,
 }
 
 .dashboard-kpis .metric-card strong {
-  margin: 0 0 14px;
+  margin: 0 0 10px;
   color: #020617;
-  font-size: 38px;
+  font-size: 34px;
   font-weight: 800;
   letter-spacing: -0.6px;
   line-height: 1;

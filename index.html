@@ -175,19 +175,19 @@
         <section class="panel-section active" id="overviewPanel">
           <div class="dashboard-page-header">
             <div>
-              <p class="eyebrow">Repair operations</p>
+              <p class="eyebrow">Repair operations workspace</p>
               <h2>Maintenance command centre</h2>
               <p>Track tenant reports, quotes, approvals, contractor jobs, and completions.</p>
             </div>
           </div>
           <div class="metrics-grid dashboard-kpis">
-            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-new" tabindex="0" role="button" aria-label="Open new repair reports">
+            <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-open" tabindex="0" role="button" aria-label="Open active repair tickets">
               <div class="metric-card-top">
-                <span class="metric-title">New reports</span>
+                <span class="metric-title">Open repairs</span>
                 <span class="stat-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5V4Zm4 5h6M9 13h6M9 17h3" /></svg></span>
               </div>
               <strong id="dashboardNewReports">0</strong>
-              <small>tenant issues waiting for review</small>
+              <small>active repair tickets</small>
             </article>
             <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-urgent" tabindex="0" role="button" aria-label="Open urgent repairs">
               <div class="metric-card-top">
@@ -223,11 +223,11 @@
             </article>
             <article class="metric-card metric-link" data-panel-target="ticketsPanel" data-route-filter="repairs-completed" tabindex="0" role="button" aria-label="Open completed repair jobs">
               <div class="metric-card-top">
-                <span class="metric-title">Completed this month</span>
+                <span class="metric-title">Completed repairs</span>
                 <span class="stat-icon green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6M4 20h16" /></svg></span>
               </div>
               <strong id="dashboardCompletedThisMonth">0</strong>
-              <small>completed, confirmed, or closed</small>
+              <small>completed or confirmed</small>
             </article>
           </div>
 

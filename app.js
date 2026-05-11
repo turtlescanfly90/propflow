@@ -819,6 +819,14 @@ function prepareRepairTicket(ticket = {}) {
   };
 }
 
+function isClosedRepair(ticket = {}) {
+  return ["Closed", "Cancelled"].includes(normaliseRepairStatus(ticket.status));
+}
+
+function isNewRepair(ticket = {}) {
+  return normaliseRepairStatus(ticket.status) === "New";
+}
+
 function isCompletedRepair(ticket = {}) {
   return ["Completed", "Tenant confirmed", "Closed"].includes(normaliseRepairStatus(ticket.status));
 }
@@ -839,7 +847,15 @@ function isAwaitingQuote(ticket = {}) {
 
 function isAwaitingLandlordApproval(ticket = {}) {
   const prepared = prepareRepairTicket(ticket);
-  return isOpenRepair(prepared) && (normaliseRepairStatus(prepared.status) === "Awaiting landlord approval" || prepared.landlordApprovalStatus === "pending");
+  const approvalText = String(prepared.approval || "").toLowerCase();
+  const estimatedCost = Number(prepared.estimatedCost || prepared.actualCost || 0);
+  const approvalNotRequired = approvalText.includes("not required") || approvalText.includes("no landlord approval");
+  const costNeedsApproval = !approvalNotRequired && approvalText.includes("required") && estimatedCost > 250;
+  return isOpenRepair(prepared) && (
+    normaliseRepairStatus(prepared.status) === "Awaiting landlord approval" ||
+    prepared.landlordApprovalStatus === "pending" ||
+    costNeedsApproval
+  );
 }
 
 function isScheduledJob(ticket = {}) {
@@ -854,6 +870,32 @@ function isCompletedThisMonth(ticket = {}) {
   if (Number.isNaN(date.getTime())) return true;
   const now = new Date();
   return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+}
+
+function repairDashboardTickets() {
+  const tickets = Array.isArray(state.tickets) && state.tickets.length ? state.tickets : (defaultTickets || []);
+  return tickets.map(prepareRepairTicket);
+}
+
+function hasConfirmedAppointment(ticket = {}) {
+  return appointmentStatusValue(ticket) === "confirmed" || Boolean(ticket.appointment?.confirmedStart || ticket.appointment?.confirmedEnd);
+}
+
+function isOpenRepairWithoutConfirmedAppointment(ticket = {}) {
+  return isOpenRepair(ticket) && !hasConfirmedAppointment(ticket);
+}
+
+function getRepairDashboardMetrics() {
+  const tickets = repairDashboardTickets();
+  return {
+    tickets,
+    openRepairs: tickets.filter(isOpenRepair).length,
+    urgentRepairs: tickets.filter(isUrgentRepair).length,
+    awaitingQuotes: tickets.filter(isAwaitingQuote).length,
+    awaitingLandlordApproval: tickets.filter(isAwaitingLandlordApproval).length,
+    scheduledJobs: tickets.filter(isScheduledJob).length,
+    completedRepairs: tickets.filter(isCompletedRepair).length,
+  };
 }
 
 function loadState(key = activeStorageKey, options = {}) {
@@ -1589,7 +1631,7 @@ function renderTimeline(containerId, items) {
 }
 
 function dashboardActivityItems() {
-  return state.tickets.slice(0, 8).map((ticket) => {
+  return getRepairDashboardMetrics().tickets.slice(0, 8).map((ticket) => {
     const status = normaliseRepairStatus(ticket.status);
     const label =
       status === "New" ? "Tenant reported repair" :
@@ -1611,7 +1653,7 @@ function dashboardActivityItems() {
 function repairNeedsScheduling(ticket = {}) {
   const prepared = prepareRepairTicket(ticket);
   const status = normaliseRepairStatus(prepared.status);
-  return isOpenRepair(prepared) && !isScheduledJob(prepared) && (status === "Approved" || prepared.approvedByLandlord || prepared.landlordApprovalStatus === "approved");
+  return isOpenRepairWithoutConfirmedAppointment(prepared) && (status === "Approved" || prepared.approvedByLandlord || prepared.landlordApprovalStatus === "approved");
 }
 
 function repairNextAction(ticket = {}) {
@@ -1622,6 +1664,7 @@ function repairNextAction(ticket = {}) {
   if (isAwaitingQuote(prepared)) return "Request or chase quote";
   if (isAwaitingLandlordApproval(prepared)) return "Chase landlord approval";
   if (repairNeedsScheduling(prepared)) return "Schedule contractor visit";
+  if (isOpenRepairWithoutConfirmedAppointment(prepared)) return "Confirm appointment";
   if (status === "Scheduled") return "Monitor visit";
   if (status === "In progress") return "Check progress";
   if (isCompletedRepair(prepared)) return "Archive or confirm";
@@ -1629,11 +1672,15 @@ function repairNextAction(ticket = {}) {
 }
 
 function jobsNeedingAction() {
-  return state.tickets
+  return getRepairDashboardMetrics().tickets
     .map(prepareRepairTicket)
     .filter((ticket) => {
       const status = normaliseRepairStatus(ticket.status);
-      return status === "New" || isUrgentRepair(ticket) || isAwaitingQuote(ticket) || isAwaitingLandlordApproval(ticket) || repairNeedsScheduling(ticket);
+      return isNewRepair(ticket) ||
+        isUrgentRepair(ticket) ||
+        isAwaitingQuote(ticket) ||
+        isAwaitingLandlordApproval(ticket) ||
+        isOpenRepairWithoutConfirmedAppointment(ticket);
     })
     .slice(0, 8);
 }
@@ -1648,9 +1695,10 @@ function repairPipelineCounts() {
     ["In progress", (ticket) => normaliseRepairStatus(ticket.status) === "In progress"],
     ["Completed", isCompletedRepair],
   ];
+  const tickets = getRepairDashboardMetrics().tickets;
   return groups.map(([label, predicate]) => ({
     label,
-    count: state.tickets.filter((ticket) => predicate(prepareRepairTicket(ticket))).length,
+    count: tickets.filter((ticket) => predicate(prepareRepairTicket(ticket))).length,
   }));
 }
 
@@ -1669,7 +1717,7 @@ function renderActionRows(container, tickets) {
         const status = normaliseRepairStatus(ticket.status);
         return `
           <button class="data-row repair-action-row" type="button" data-open-repair="${ticket.id}">
-            <span><strong>${escapeHtml(ticket.title || "Repair")}</strong><small>${escapeHtml(ticket.property || "No property")}</small></span>
+            <span><strong>${escapeHtml(ticket.title || "Repair")}</strong><small>${escapeHtml(ticket.id || "Repair")} - ${escapeHtml(ticket.property || "No property")}</small></span>
             <span>${escapeHtml(ticket.tenant || "Tenant")}</span>
             <span><em class="status-chip ${statusClass(ticket)}">${escapeHtml(ticket.priority || "Routine")}</em></span>
             <span><small>${escapeHtml(status)}</small><strong>${escapeHtml(repairNextAction(ticket))}</strong></span>
@@ -1844,18 +1892,13 @@ function renderTicketAvailability(ticket) {
 
 function updateMetrics() {
   state.tickets = state.tickets.map(prepareRepairTicket);
-  const newReports = state.tickets.filter((ticket) => normaliseRepairStatus(ticket.status) === "New").length;
-  const urgentTickets = state.tickets.filter(isUrgentRepair).length;
-  const awaitingQuotes = state.tickets.filter(isAwaitingQuote).length;
-  const awaitingApproval = state.tickets.filter(isAwaitingLandlordApproval).length;
-  const scheduledJobs = state.tickets.filter(isScheduledJob).length;
-  const completedThisMonth = state.tickets.filter(isCompletedThisMonth).length;
-  setText("dashboardNewReports", newReports);
-  setText("dashboardUrgentRepairs", urgentTickets);
-  setText("dashboardAwaitingQuotes", awaitingQuotes);
-  setText("dashboardAwaitingApproval", awaitingApproval);
-  setText("dashboardScheduledJobs", scheduledJobs);
-  setText("dashboardCompletedThisMonth", completedThisMonth);
+  const repairMetrics = getRepairDashboardMetrics();
+  setText("dashboardNewReports", repairMetrics.openRepairs);
+  setText("dashboardUrgentRepairs", repairMetrics.urgentRepairs);
+  setText("dashboardAwaitingQuotes", repairMetrics.awaitingQuotes);
+  setText("dashboardAwaitingApproval", repairMetrics.awaitingLandlordApproval);
+  setText("dashboardScheduledJobs", repairMetrics.scheduledJobs);
+  setText("dashboardCompletedThisMonth", repairMetrics.completedRepairs);
   const urgentMeta = document.querySelector("#dashboardUrgentRepairs")?.nextElementSibling;
   if (urgentMeta) urgentMeta.textContent = "emergency or urgent, not completed";
   updateDocumentMetrics();
