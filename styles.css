@@ -331,7 +331,7 @@ body:not(.auth-required) .auth-screen {
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .eyebrow {
@@ -355,6 +355,12 @@ h1 {
   font-size: clamp(30px, 4vw, 50px);
   line-height: 1.04;
   letter-spacing: 0;
+}
+
+.topbar h1 {
+  max-width: 560px;
+  font-size: clamp(26px, 3vw, 38px);
+  line-height: 1.08;
 }
 
 h2 {

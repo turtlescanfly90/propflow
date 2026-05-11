@@ -749,29 +749,62 @@ function normaliseRepairStatus(status) {
     "under review": "Under review",
     "awaiting tenant availability": "Under review",
     "quote requested": "Quote requested",
+    "quotes requested": "Quote requested",
+    "awaiting quote": "Quote requested",
+    "awaiting quotes": "Quote requested",
     "quotes received": "Quotes received",
+    quoted: "Quotes received",
     "awaiting landlord approval": "Awaiting landlord approval",
+    "landlord approval pending": "Awaiting landlord approval",
+    "approval pending": "Awaiting landlord approval",
     approved: "Approved",
     scheduled: "Scheduled",
     "appointment confirmed": "Scheduled",
+    "visit confirmed": "Scheduled",
     "assigned to tradesperson": "Scheduled",
     "in progress": "In progress",
     completed: "Completed",
+    complete: "Completed",
     "tenant confirmed": "Tenant confirmed",
+    resolved: "Tenant confirmed",
     closed: "Closed",
     cancelled: "Closed",
   };
   return statusMap[value] || (status ? String(status) : "New");
 }
 
+function repairPriorityValue(ticket = {}) {
+  return String(ticket.priority || ticket.urgency || "").trim().toLowerCase();
+}
+
+function appointmentStatusValue(ticket = {}) {
+  return String(ticket.appointment?.status || ticket.appointmentStatus || "").trim().toLowerCase();
+}
+
+function requiresLandlordApproval(ticket = {}) {
+  const status = normaliseRepairStatus(ticket.status);
+  const approvalText = String(ticket.approval || ticket.landlordApproval || "").toLowerCase();
+  const explicitlyNotRequired = approvalText.includes("not required") || approvalText.includes("no landlord approval");
+  const textRequiresLandlord =
+    approvalText.includes("landlord") &&
+    (approvalText.includes("required") || approvalText.includes("needed") || approvalText.includes("pending"));
+  return Boolean(
+    ticket.approvalRequired ||
+    status === "Awaiting landlord approval" ||
+    ticket.landlordApprovalStatus === "pending" ||
+    (!explicitlyNotRequired && textRequiresLandlord)
+  );
+}
+
 function prepareRepairTicket(ticket = {}) {
   const quoteRequests = Array.isArray(ticket.quoteRequests) ? ticket.quoteRequests : [];
   const quotes = Array.isArray(ticket.quotes) ? ticket.quotes : [];
+  const approvalRequired = requiresLandlordApproval(ticket);
   const landlordApprovalStatus = ["not_required", "pending", "approved", "rejected"].includes(ticket.landlordApprovalStatus)
     ? ticket.landlordApprovalStatus
     : ticket.approvedByLandlord
       ? "approved"
-      : ticket.approvalRequired
+      : approvalRequired
         ? "pending"
         : "not_required";
   return {
@@ -780,7 +813,7 @@ function prepareRepairTicket(ticket = {}) {
     quoteRequests,
     quotes,
     selectedQuoteId: ticket.selectedQuoteId || "",
-    approvalRequired: Boolean(ticket.approvalRequired || landlordApprovalStatus === "pending" || String(ticket.approval || "").toLowerCase().includes("required")),
+    approvalRequired: Boolean(approvalRequired),
     approvedByLandlord: Boolean(ticket.approvedByLandlord || landlordApprovalStatus === "approved"),
     landlordApprovalStatus,
   };
@@ -795,21 +828,22 @@ function isOpenRepair(ticket = {}) {
 }
 
 function isUrgentRepair(ticket = {}) {
-  return isOpenRepair(ticket) && ["Emergency", "Urgent"].includes(String(ticket.priority || "").trim());
+  const priority = repairPriorityValue(ticket);
+  return isOpenRepair(ticket) && (priority === "emergency" || priority === "urgent" || ticket.tag === "urgent");
 }
 
 function isAwaitingQuote(ticket = {}) {
   const prepared = prepareRepairTicket(ticket);
-  return normaliseRepairStatus(prepared.status) === "Quote requested" || (prepared.quoteRequests.length > 0 && prepared.quotes.length === 0);
+  return isOpenRepair(prepared) && (normaliseRepairStatus(prepared.status) === "Quote requested" || (prepared.quoteRequests.length > 0 && prepared.quotes.length === 0));
 }
 
 function isAwaitingLandlordApproval(ticket = {}) {
   const prepared = prepareRepairTicket(ticket);
-  return normaliseRepairStatus(prepared.status) === "Awaiting landlord approval" || prepared.landlordApprovalStatus === "pending";
+  return isOpenRepair(prepared) && (normaliseRepairStatus(prepared.status) === "Awaiting landlord approval" || prepared.landlordApprovalStatus === "pending");
 }
 
 function isScheduledJob(ticket = {}) {
-  return normaliseRepairStatus(ticket.status) === "Scheduled" || ticket.appointment?.status === "confirmed";
+  return isOpenRepair(ticket) && (normaliseRepairStatus(ticket.status) === "Scheduled" || appointmentStatusValue(ticket) === "confirmed");
 }
 
 function isCompletedThisMonth(ticket = {}) {
@@ -1368,7 +1402,7 @@ function setPortalMode(mode) {
   setText("brandSub", portalLabel);
   setText(
     "modeEyebrow",
-    mode === "tenant" ? "Tenant repair portal" : mode === "trades" ? "Tradesperson job workspace" : mode === "landlord" ? "Landlord repair approvals" : "Repair operations workspace",
+    mode === "tenant" ? "Tenant repair portal" : mode === "trades" ? "Tradesperson job workspace" : mode === "landlord" ? "Landlord repair approvals" : "Agency workspace",
   );
   setText(
     "modeTitle",
@@ -1378,7 +1412,7 @@ function setPortalMode(mode) {
         ? "Manage job requests, quotes, schedules, and completion notes."
         : mode === "landlord"
           ? "Review repair approvals, costs, invoices, and completed work."
-          : "Run tenant repairs, quotes, approvals, and contractor jobs from one workspace.",
+          : "Repair operations",
   );
 }
 
@@ -1483,7 +1517,7 @@ function filteredTickets() {
     const routeUrgencyMatches =
       !repairRouteFilter.urgency ||
       ticket.tag === repairRouteFilter.urgency ||
-      String(ticket.priority || "").toLowerCase() === repairRouteFilter.urgency.toLowerCase();
+      repairPriorityValue(ticket) === repairRouteFilter.urgency.toLowerCase();
     const haystack = `${ticket.title} ${ticket.property} ${ticket.tenant} ${status} ${ticket.trade} ${ticket.contractor}`.toLowerCase();
     const searchMatches = !repairSearch || haystack.includes(repairSearch);
     return filterMatches && routeStatusMatches && routeUrgencyMatches && searchMatches;
